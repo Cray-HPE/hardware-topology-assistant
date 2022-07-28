@@ -1,5 +1,12 @@
 {
   "Hardware": {
+    "x3000c0r42b0": {
+      "Parent": "x3000c0r42",
+      "Xname": "x3000c0r42b0",
+      "Type": "comptype_rtr_bmc",
+      "Class": "River",
+      "TypeString": "RouterBMC"
+    },
     "x3000m0": {
       "Parent": "x3000",
       "Xname": "x3000m0",

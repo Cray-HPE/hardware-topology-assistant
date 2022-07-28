@@ -132,7 +132,7 @@ func buildSLSHardware(topologyNode TopologyNode) (sls_common.GenericHardware, er
 	case "pdu":
 		return buildSLSPDU(topologyNode.Location)
 	case "slingshot_hsn_switch":
-		return sls_common.GenericHardware{}, nil
+		return buildSLSSlingshotHSNSwitch(topologyNode.Location)
 	case "river_compute_node":
 		// Compute Nodes
 
@@ -165,6 +165,26 @@ func buildSLSPDU(location Location) (sls_common.GenericHardware, error) {
 	pduXname := xnames.CabinetPDUController{
 		Cabinet:              cabinetOrdinal,
 		CabinetPDUController: pduOrdinal,
+	}
+
+	return sls_common.NewGenericHardware(pduXname.String(), sls_common.ClassRiver, nil), nil
+}
+
+func buildSLSSlingshotHSNSwitch(location Location) (sls_common.GenericHardware, error) {
+	cabinetOrdinal, err := extractNumber(location.Rack)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+	}
+
+	rackUOrdinal, err := extractNumber(location.Elevation)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
+	}
+
+	pduXname := xnames.RouterBMC{
+		Cabinet:      cabinetOrdinal,
+		RouterModule: rackUOrdinal,
+		RouterBMC:    0,
 	}
 
 	return sls_common.NewGenericHardware(pduXname.String(), sls_common.ClassRiver, nil), nil
