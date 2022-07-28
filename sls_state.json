@@ -5,7 +5,18 @@
       "Xname": "x3000c0r42b0",
       "Type": "comptype_rtr_bmc",
       "Class": "River",
-      "TypeString": "RouterBMC"
+      "TypeString": "RouterBMC",
+      "ExtraProperties": {
+        "Username": "vault://hms-creds/x3000c0r42b0",
+        "Password": "vault://hms-creds/x3000c0r42b0"
+      }
+    },
+    "x3000c0s16b999": {
+      "Parent": "x3000c0s16",
+      "Xname": "x3000c0s16b999",
+      "Type": "comptype_ncard",
+      "Class": "River",
+      "TypeString": "NodeBMC"
     },
     "x3000m0": {
       "Parent": "x3000",

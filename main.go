@@ -128,9 +128,9 @@ func extractNumber(numberRaw string) (int, error) {
 func buildSLSHardware(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
 	switch topologyNode.Architecture {
 	case "subrack":
-		return sls_common.GenericHardware{}, nil
+		return buildSLSCMC(topologyNode.Location)
 	case "pdu":
-		return buildSLSPDU(topologyNode.Location)
+		return buildSLSPDUController(topologyNode.Location)
 	case "slingshot_hsn_switch":
 		return buildSLSSlingshotHSNSwitch(topologyNode.Location)
 	case "river_compute_node":
@@ -151,7 +151,7 @@ func buildSLSHardware(topologyNode TopologyNode) (sls_common.GenericHardware, er
 	return sls_common.GenericHardware{}, fmt.Errorf("unknown architecture type %s", topologyNode.Architecture)
 }
 
-func buildSLSPDU(location Location) (sls_common.GenericHardware, error) {
+func buildSLSPDUController(location Location) (sls_common.GenericHardware, error) {
 	cabinetOrdinal, err := extractNumber(location.Rack)
 	if err != nil {
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
@@ -162,12 +162,12 @@ func buildSLSPDU(location Location) (sls_common.GenericHardware, error) {
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract pdu ordinal due to: %w", err)
 	}
 
-	pduXname := xnames.CabinetPDUController{
+	xname := xnames.CabinetPDUController{
 		Cabinet:              cabinetOrdinal,
 		CabinetPDUController: pduOrdinal,
 	}
 
-	return sls_common.NewGenericHardware(pduXname.String(), sls_common.ClassRiver, nil), nil
+	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, nil), nil
 }
 
 func buildSLSSlingshotHSNSwitch(location Location) (sls_common.GenericHardware, error) {
@@ -181,11 +181,38 @@ func buildSLSSlingshotHSNSwitch(location Location) (sls_common.GenericHardware, 
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
 	}
 
-	pduXname := xnames.RouterBMC{
+	xname := xnames.RouterBMC{
 		Cabinet:      cabinetOrdinal,
+		Chassis:      0, // TODO EX2500
 		RouterModule: rackUOrdinal,
 		RouterBMC:    0,
 	}
 
-	return sls_common.NewGenericHardware(pduXname.String(), sls_common.ClassRiver, nil), nil
+	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, sls_common.ComptypeRtrBmc{
+		Username: fmt.Sprintf("vault://hms-creds/%s", xname.String()),
+		Password: fmt.Sprintf("vault://hms-creds/%s", xname.String()),
+	}), nil
+}
+
+func buildSLSCMC(location Location) (sls_common.GenericHardware, error) {
+	// TODO what should be done if if the CMC does not have a bmc connection? Ie the Intel CMC that doesn't really exist
+
+	cabinetOrdinal, err := extractNumber(location.Rack)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+	}
+
+	rackUOrdinal, err := extractNumber(location.Elevation)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
+	}
+
+	xname := xnames.NodeBMC{
+		Cabinet:       cabinetOrdinal,
+		Chassis:       0, // TODO EX2500
+		ComputeModule: rackUOrdinal,
+		NodeBMC:       999, // Gigabyte CMCs get this
+	}
+
+	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, nil), nil
 }
