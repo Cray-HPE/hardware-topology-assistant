@@ -11,12 +11,249 @@
         "Password": "vault://hms-creds/x3000c0r42b0"
       }
     },
+    "x3000c0s13b0n0": {
+      "Parent": "x3000c0s13b0",
+      "Xname": "x3000c0s13b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Storage",
+        "Aliases": [
+          "ncn-s004"
+        ]
+      }
+    },
+    "x3000c0s14b0n0": {
+      "Parent": "x3000c0s14b0",
+      "Xname": "x3000c0s14b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Storage",
+        "Aliases": [
+          "ncn-s005"
+        ]
+      }
+    },
+    "x3000c0s16b0n0": {
+      "Parent": "x3000c0s16b0",
+      "Xname": "x3000c0s16b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 4,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000004"
+        ]
+      }
+    },
+    "x3000c0s16b1n0": {
+      "Parent": "x3000c0s16b1",
+      "Xname": "x3000c0s16b1n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 1,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000001"
+        ]
+      }
+    },
+    "x3000c0s16b2n0": {
+      "Parent": "x3000c0s16b2",
+      "Xname": "x3000c0s16b2n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 2,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000002"
+        ]
+      }
+    },
+    "x3000c0s16b3n0": {
+      "Parent": "x3000c0s16b3",
+      "Xname": "x3000c0s16b3n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 3,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000003"
+        ]
+      }
+    },
     "x3000c0s16b999": {
       "Parent": "x3000c0s16",
       "Xname": "x3000c0s16b999",
       "Type": "comptype_ncard",
       "Class": "River",
       "TypeString": "NodeBMC"
+    },
+    "x3000c0s18b0n0": {
+      "Parent": "x3000c0s18b0",
+      "Xname": "x3000c0s18b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Worker",
+        "Aliases": [
+          "ncn-w004"
+        ]
+      }
+    },
+    "x3000c0s19b0n0": {
+      "Parent": "x3000c0s19b0",
+      "Xname": "x3000c0s19b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Application",
+        "Aliases": [
+          "uan001"
+        ]
+      }
+    },
+    "x3000c0s1b0n0": {
+      "Parent": "x3000c0s1b0",
+      "Xname": "x3000c0s1b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Master",
+        "Aliases": [
+          "ncn-m001"
+        ]
+      }
+    },
+    "x3000c0s2b0n0": {
+      "Parent": "x3000c0s2b0",
+      "Xname": "x3000c0s2b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Master",
+        "Aliases": [
+          "ncn-m002"
+        ]
+      }
+    },
+    "x3000c0s3b0n0": {
+      "Parent": "x3000c0s3b0",
+      "Xname": "x3000c0s3b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Master",
+        "Aliases": [
+          "ncn-m003"
+        ]
+      }
+    },
+    "x3000c0s4b0n0": {
+      "Parent": "x3000c0s4b0",
+      "Xname": "x3000c0s4b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Worker",
+        "Aliases": [
+          "ncn-w001"
+        ]
+      }
+    },
+    "x3000c0s5b0n0": {
+      "Parent": "x3000c0s5b0",
+      "Xname": "x3000c0s5b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Worker",
+        "Aliases": [
+          "ncn-w002"
+        ]
+      }
+    },
+    "x3000c0s6b0n0": {
+      "Parent": "x3000c0s6b0",
+      "Xname": "x3000c0s6b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Worker",
+        "Aliases": [
+          "ncn-w003"
+        ]
+      }
+    },
+    "x3000c0s7b0n0": {
+      "Parent": "x3000c0s7b0",
+      "Xname": "x3000c0s7b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Storage",
+        "Aliases": [
+          "ncn-s001"
+        ]
+      }
+    },
+    "x3000c0s8b0n0": {
+      "Parent": "x3000c0s8b0",
+      "Xname": "x3000c0s8b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Storage",
+        "Aliases": [
+          "ncn-s002"
+        ]
+      }
+    },
+    "x3000c0s9b0n0": {
+      "Parent": "x3000c0s9b0",
+      "Xname": "x3000c0s9b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Storage",
+        "Aliases": [
+          "ncn-s003"
+        ]
+      }
     },
     "x3000m0": {
       "Parent": "x3000",

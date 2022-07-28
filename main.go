@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
@@ -23,6 +24,27 @@ type Paddle struct {
 	Topology     []TopologyNode `json:"topology"`
 }
 
+func (p *Paddle) FindCommonName(commonName string) (TopologyNode, bool) {
+	// TODO can a common name be repeated, or is it an unique key?
+	for _, tn := range p.Topology {
+		if tn.CommonName == commonName {
+			return tn, true
+		}
+	}
+
+	return TopologyNode{}, false
+}
+
+func (p *Paddle) FindNodeByID(id int) (TopologyNode, bool) {
+	for _, tn := range p.Topology {
+		if tn.ID == id {
+			return tn, true
+		}
+	}
+
+	return TopologyNode{}, false
+}
+
 type TopologyNode struct {
 	Architecture string   `json:"architecture"`
 	CommonName   string   `json:"common_name"`
@@ -32,6 +54,18 @@ type TopologyNode struct {
 	Ports        []Port   `json:"ports"`
 	Type         string   `json:"type"`
 	Vendor       string   `json:"vendor"`
+}
+
+func (tp *TopologyNode) FindPorts(slot string) []Port {
+	// TODO can slot be more than one?
+	var ports []Port
+	for _, port := range tp.Ports {
+		if port.Slot == slot {
+			ports = append(ports, port)
+		}
+	}
+
+	return ports
 }
 
 // The Port type defines where things are plugged in
@@ -48,6 +82,7 @@ type Port struct {
 type Location struct {
 	Elevation string `json:"elevation"`
 	Rack      string `json:"rack"`
+	Parent    string `json:"parent"`
 }
 
 func main() {
@@ -75,7 +110,7 @@ func main() {
 	for _, topologyNode := range paddle.Topology {
 		fmt.Println(topologyNode.Architecture, topologyNode.CommonName)
 
-		hardware, err := buildSLSHardware(topologyNode)
+		hardware, err := buildSLSHardware(topologyNode, paddle)
 		if err != nil {
 			panic(err)
 		}
@@ -125,7 +160,7 @@ func extractNumber(numberRaw string) (int, error) {
 	return number, nil
 }
 
-func buildSLSHardware(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+func buildSLSHardware(topologyNode TopologyNode, paddle Paddle) (sls_common.GenericHardware, error) {
 	switch topologyNode.Architecture {
 	case "subrack":
 		return buildSLSCMC(topologyNode.Location)
@@ -134,14 +169,12 @@ func buildSLSHardware(topologyNode TopologyNode) (sls_common.GenericHardware, er
 	case "slingshot_hsn_switch":
 		return buildSLSSlingshotHSNSwitch(topologyNode.Location)
 	case "river_compute_node":
-		// Compute Nodes
-
-		return sls_common.GenericHardware{}, nil
+		fallthrough
 	case "river_ncn_node_2_port":
 		fallthrough
 	case "river_ncn_node_4_port":
-		// NCNs: Management and Application
-		return sls_common.GenericHardware{}, nil
+		// All node architecture needs to go through this functio
+		return buildSLSNode(topologyNode, paddle)
 	case "spine":
 		return sls_common.GenericHardware{}, nil
 	case "river_bmc_leaf":
@@ -215,4 +248,122 @@ func buildSLSCMC(location Location) (sls_common.GenericHardware, error) {
 	}
 
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, nil), nil
+}
+
+func buildSLSNode(topologyNode TopologyNode, paddle Paddle) (sls_common.GenericHardware, error) {
+	cabinetOrdinal, err := extractNumber(topologyNode.Location.Rack)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+	}
+
+	// This rack U is used for single and dual node chassis
+	rackUOrdinal, err := extractNumber(topologyNode.Location.Elevation)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
+	}
+
+	chassisOrdinal := 0 // TODO EX2500
+
+	bmcOrdinal := 0 // This is the default for single node chassis
+
+	// Build up the nodes ExtraProperties
+	var extraProperties sls_common.ComptypeNode
+
+	// Now to make Sean L sad
+	// TODO NCNs need their NID, which is automatically assigned serially via CSI.
+	if strings.HasPrefix(topologyNode.CommonName, "ncn-m") {
+		extraProperties.Role = "Management"
+		extraProperties.SubRole = "Master"
+		extraProperties.Aliases = []string{topologyNode.CommonName}
+	} else if strings.HasPrefix(topologyNode.CommonName, "ncn-w") {
+		extraProperties.Role = "Management"
+		extraProperties.SubRole = "Worker"
+		extraProperties.Aliases = []string{topologyNode.CommonName}
+	} else if strings.HasPrefix(topologyNode.CommonName, "ncn-s") {
+		extraProperties.Role = "Management"
+		extraProperties.SubRole = "Storage"
+		extraProperties.Aliases = []string{topologyNode.CommonName}
+	} else if strings.HasPrefix(topologyNode.CommonName, "cn") {
+		extraProperties.Role = "Compute"
+		extraProperties.NID, err = extractNumber(topologyNode.CommonName)
+		if err != nil {
+			return sls_common.GenericHardware{}, fmt.Errorf("unable to extract NID from common name (%s) due to: %w", topologyNode.CommonName, err)
+		}
+
+		// The CANU common name is different the compute node aliases that are present in SLS
+		extraProperties.Aliases = []string{
+			fmt.Sprintf("nid%06d", extraProperties.NID),
+		}
+
+	} else {
+		// Must be an application node
+		// Application nodes don't have a NID due to reasons.
+		extraProperties.Role = "Application"
+		// extraProperties.SubRole = "" // TODO need the application node config
+		extraProperties.Aliases = []string{
+			topologyNode.CommonName,
+		}
+	}
+
+	// Determine the BMC ordinal and override the rack U if needed
+	// Is this an dense quad node chassis?
+	if topologyNode.Location.Parent != "" {
+		// TODO there is a bug in CANU where the Parent location is not the common name
+		// of the BMC. So we have to resort to looking for the CMC connection and looking for the CMC that way
+		//
+		// The Parent field has SubRack-002-CMC
+		// The common field is SubRack002-CMC
+		//
+		// // Retrieve the parent node
+		// cmc, ok := paddle.FindCommonName(topologyNode.Location.Parent)
+		// if !ok {
+		// 	return sls_common.GenericHardware{}, fmt.Errorf("unable to find parent topology node with common name (%v)", topologyNode.Location.Parent)
+		// }
+		var cmc TopologyNode
+		if cmcPorts := topologyNode.FindPorts("cmc"); len(cmcPorts) == 1 {
+			var ok bool
+			cmc, ok = paddle.FindNodeByID(cmcPorts[0].DestNodeID)
+			if !ok {
+				return sls_common.GenericHardware{}, fmt.Errorf("unable to find parent topology node with id (%v)", cmcPorts[0].DestNodeID)
+			}
+		} else {
+			return sls_common.GenericHardware{}, fmt.Errorf("unexpected number of 'cmc' ports found (%v) expected 1", len(cmcPorts))
+		}
+
+		// This nodes cabinet and the CMC cabinet need to agrees
+		if topologyNode.Location.Rack != cmc.Location.Rack {
+			return sls_common.GenericHardware{}, fmt.Errorf("parent topology has inconsistent rack location (%v) expected %v", cmc.Location.Rack, topologyNode.Location.Rack)
+		}
+
+		// TODO Verify the Parent is either equal rack elevation or 1 below this node
+		// As that is the current custom of how these xnames are derived.
+
+		// Override the rack U with the CMC/parent rack U
+		rackUOrdinal, err = extractNumber(cmc.Location.Elevation)
+		if err != nil {
+			return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal from parent topology node due to: %w", err)
+		}
+
+		// Calculate the BMC ordinal, which is derived from its NID.
+		if extraProperties.Role != "Compute" {
+			return sls_common.GenericHardware{}, fmt.Errorf("calculating BMC ordinal for a dense quad node chassis for a non compute node (%v). Is this even supported?", extraProperties.Role)
+		}
+		if extraProperties.NID == 0 {
+			return sls_common.GenericHardware{}, fmt.Errorf("are zero NIDs even supported? I don't think so...")
+		}
+		bmcOrdinal = (extraProperties.NID%4 - 1) + 1
+	}
+
+	// TODO Is this ia dual node chassis?
+	// Otherwise this is a single node chassis
+
+	xname := xnames.Node{
+		Cabinet:       cabinetOrdinal,
+		Chassis:       chassisOrdinal,
+		ComputeModule: rackUOrdinal,
+		NodeBMC:       bmcOrdinal,
+		Node:          0, // Assumption: Currently all river hardware that CSM supports BMCs only control one node.
+	}
+
+	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
 }
