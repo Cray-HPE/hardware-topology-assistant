@@ -255,6 +255,25 @@
         ]
       }
     },
+    "x3000c0w37": {
+      "Parent": "x3000c0",
+      "Xname": "x3000c0w37",
+      "Type": "comptype_mgmt_switch",
+      "Class": "River",
+      "TypeString": "MgmtSwitch",
+      "ExtraProperties": {
+        "Brand": "Aruba",
+        "Model": "6300M_JL762A",
+        "SNMPAuthPassword": "vault://hms-creds/x3000c0w37",
+        "SNMPAuthProtocol": "MD5",
+        "SNMPPrivPassword": "vault://hms-creds/x3000c0w37",
+        "SNMPPrivProtocol": "DES",
+        "SNMPUsername": "testuser",
+        "Aliases": [
+          "sw-leaf-bmc-001"
+        ]
+      }
+    },
     "x3000m0": {
       "Parent": "x3000",
       "Xname": "x3000m0",

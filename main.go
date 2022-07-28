@@ -85,6 +85,15 @@ type Location struct {
 	Parent    string `json:"parent"`
 }
 
+// Paddle Vendor to SLS Brand
+var vendorBrandMapping = map[string]string{
+	"aruba": "Aruba",
+	// TODO Dell
+	// TODO Mellanox
+}
+
+// TODO Mountain hardware can be learned from the number of CMMs present, and thier chassis numbers
+
 func main() {
 	if len(os.Args) != 2 {
 		panic("Incorrect number of CLI args provided")
@@ -173,12 +182,16 @@ func buildSLSHardware(topologyNode TopologyNode, paddle Paddle) (sls_common.Gene
 	case "river_ncn_node_2_port":
 		fallthrough
 	case "river_ncn_node_4_port":
-		// All node architecture needs to go through this functio
+		// All node architecture needs to go through this function
 		return buildSLSNode(topologyNode, paddle)
+	case "mountain_compute_leaf": // CDUMgmtSwitch
+		return sls_common.GenericHardware{}, nil
 	case "spine":
 		return sls_common.GenericHardware{}, nil
-	case "river_bmc_leaf":
+	case "river_ncn_leaf":
 		return sls_common.GenericHardware{}, nil
+	case "river_bmc_leaf":
+		return buildSLSMgmtSwitch(topologyNode)
 	}
 
 	return sls_common.GenericHardware{}, fmt.Errorf("unknown architecture type %s", topologyNode.Architecture)
@@ -367,3 +380,50 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle) (sls_common.GenericH
 
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
 }
+
+func buildSLSMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+	cabinetOrdinal, err := extractNumber(topologyNode.Location.Rack)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+	}
+
+	rackUOrdinal, err := extractNumber(topologyNode.Location.Elevation)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
+	}
+
+	xname := xnames.MgmtSwitch{
+		Cabinet:    cabinetOrdinal,
+		Chassis:    0, // TODO EX2500
+		MgmtSwitch: rackUOrdinal,
+	}
+
+	slsBrand, ok := vendorBrandMapping[topologyNode.Vendor]
+	if !ok {
+		return sls_common.GenericHardware{}, fmt.Errorf("unknown topology node vendor: (%s)", topologyNode.Vendor)
+	}
+
+	extraProperties := sls_common.ComptypeMgmtSwitch{
+		Brand: slsBrand,
+		Model: topologyNode.Model,
+		Aliases: []string{
+			topologyNode.CommonName,
+		},
+		// IP4Addr: , // TODO the hms-discovery job and REDS should be using DNS for the HMN IP of the leaf-bmc switch
+		SNMPAuthPassword: fmt.Sprintf("vault://hms-creds/%s", xname.String()),
+		SNMPAuthProtocol: "MD5",
+		SNMPPrivPassword: fmt.Sprintf("vault://hms-creds/%s", xname.String()),
+		SNMPPrivProtocol: "DES",
+		SNMPUsername:     "testuser", // TODO the authentication data for the switch should be wholy within vault, and not in SLS
+	}
+
+	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
+}
+
+// func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+
+// }
+
+// func buildSLSCDUMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+
+// }
