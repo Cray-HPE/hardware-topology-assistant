@@ -80,9 +80,10 @@ type Port struct {
 
 // The Location type defines where the server physically exists in the datacenter.
 type Location struct {
-	Elevation string `json:"elevation"`
-	Rack      string `json:"rack"`
-	Parent    string `json:"parent"`
+	Elevation   string `json:"elevation"`
+	Rack        string `json:"rack"`
+	Parent      string `json:"parent"`       // TODO optional field make ptr or add ignore empty
+	SubLocation string `json:"sub_location"` // TODO optional make ptr or add ignore empty
 }
 
 // Paddle Vendor to SLS Brand
@@ -113,6 +114,14 @@ func main() {
 	// TODO Verify Paddle
 	// - Check CANU Version?
 	// - Check Architecture against list of supported
+
+	supportedArchitectures := map[string]bool{
+		"network_v2_tds": true,
+	}
+	if !supportedArchitectures[paddle.Architecture] {
+		err := fmt.Errorf("unsupported paddle architecture (%v)", paddle.Architecture)
+		panic(err)
+	}
 
 	// Iterate over the paddle file to build of SLS data
 	allHardware := map[string]sls_common.GenericHardware{}
@@ -179,6 +188,10 @@ func buildSLSHardware(topologyNode TopologyNode, paddle Paddle) (sls_common.Gene
 		return buildSLSSlingshotHSNSwitch(topologyNode.Location)
 	case "river_compute_node":
 		fallthrough
+	case "river_ncn_node_4_port_gigabyte":
+		fallthrough
+	case "river_ncn_node_2_port_gigabyte":
+		fallthrough
 	case "river_ncn_node_2_port":
 		fallthrough
 	case "river_ncn_node_4_port":
@@ -187,9 +200,9 @@ func buildSLSHardware(topologyNode TopologyNode, paddle Paddle) (sls_common.Gene
 	case "mountain_compute_leaf": // CDUMgmtSwitch
 		return sls_common.GenericHardware{}, nil
 	case "spine":
-		return sls_common.GenericHardware{}, nil
+		fallthrough
 	case "river_ncn_leaf":
-		return sls_common.GenericHardware{}, nil
+		return buildSLSMgmtHLSwitch(topologyNode)
 	case "river_bmc_leaf":
 		return buildSLSMgmtSwitch(topologyNode)
 	}
@@ -420,10 +433,49 @@ func buildSLSMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, 
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
 }
 
-// func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+	cabinetOrdinal, err := extractNumber(topologyNode.Location.Rack)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+	}
 
-// }
+	rackUOrdinal, err := extractNumber(topologyNode.Location.Elevation)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
+	}
 
-// func buildSLSCDUMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+	spaceOrdinal := 1                             // Defaults to 0 if this is the switch occupies the whole rack U. Not one half of it
+	if topologyNode.Location.SubLocation == "L" { // TODO will CANU always captailize it?
+		spaceOrdinal = 1
+	} else if topologyNode.Location.SubLocation == "R" {
+		spaceOrdinal = 2
+	}
 
-// }
+	xname := xnames.MgmtHLSwitch{
+		Cabinet:               cabinetOrdinal,
+		Chassis:               0, // TODO EX2500
+		MgmtHLSwitchEnclosure: rackUOrdinal,
+		MgmtHLSwitch:          spaceOrdinal,
+	}
+
+	slsBrand, ok := vendorBrandMapping[topologyNode.Vendor]
+	if !ok {
+		return sls_common.GenericHardware{}, fmt.Errorf("unknown topology node vendor: (%s)", topologyNode.Vendor)
+	}
+
+	extraProperties := sls_common.ComptypeMgmtHLSwitch{
+		Brand: slsBrand,
+		Model: topologyNode.Model,
+		Aliases: []string{
+			topologyNode.CommonName,
+		},
+		// IP4Addr: , // TODO the hms-discovery job and REDS should be using DNS for the HMN IP of the leaf-bmc switch
+	}
+
+	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
+
+}
+
+func buildSLSCDUMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+
+}

@@ -1,5 +1,33 @@
 {
   "Hardware": {
+    "x3000c0h39s1": {
+      "Parent": "x3000c0h39",
+      "Xname": "x3000c0h39s1",
+      "Type": "comptype_hl_switch",
+      "Class": "River",
+      "TypeString": "MgmtHLSwitch",
+      "ExtraProperties": {
+        "Brand": "Aruba",
+        "Model": "8325_JL625A",
+        "Aliases": [
+          "sw-spine-001"
+        ]
+      }
+    },
+    "x3000c0h40s1": {
+      "Parent": "x3000c0h40",
+      "Xname": "x3000c0h40s1",
+      "Type": "comptype_hl_switch",
+      "Class": "River",
+      "TypeString": "MgmtHLSwitch",
+      "ExtraProperties": {
+        "Brand": "Aruba",
+        "Model": "8325_JL625A",
+        "Aliases": [
+          "sw-spine-002"
+        ]
+      }
+    },
     "x3000c0r42b0": {
       "Parent": "x3000c0r42",
       "Xname": "x3000c0r42b0",
