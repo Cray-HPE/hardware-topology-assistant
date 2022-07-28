@@ -1,0 +1,19 @@
+{
+  "Hardware": {
+    "x3000m0": {
+      "Parent": "x3000",
+      "Xname": "x3000m0",
+      "Type": "comptype_cab_pdu_controller",
+      "Class": "River",
+      "TypeString": "CabinetPDUController"
+    },
+    "x3000m1": {
+      "Parent": "x3000",
+      "Xname": "x3000m1",
+      "Type": "comptype_cab_pdu_controller",
+      "Class": "River",
+      "TypeString": "CabinetPDUController"
+    }
+  },
+  "Networks": null
+}
