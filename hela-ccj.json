@@ -1,8 +1,8 @@
 {
-  "canu_version": "1.6.3~develop",
+  "canu_version": "1.6.9",
   "architecture": "network_v2",
-  "shcd_file": "HelaCCD.revA33.xlsx",
-  "updated_at": "2022-06-06 14:06:37",
+  "shcd_file": "HPE System Hela CCD.revA37.xlsx",
+  "updated_at": "2022-07-29 16:01:46",
   "topology": [
     {
       "common_name": "sw-cdu-002",
@@ -801,22 +801,6 @@
           "destination_slot": "ocp"
         },
         {
-          "port": 7,
-          "speed": 25,
-          "slot": null,
-          "destination_node_id": 34,
-          "destination_port": 1,
-          "destination_slot": "ocp"
-        },
-        {
-          "port": 10,
-          "speed": 25,
-          "slot": null,
-          "destination_node_id": 34,
-          "destination_port": 2,
-          "destination_slot": "ocp"
-        },
-        {
           "port": 47,
           "speed": 100,
           "slot": null,
@@ -924,22 +908,6 @@
           "slot": null,
           "destination_node_id": 24,
           "destination_port": 1,
-          "destination_slot": "pcie-slot1"
-        },
-        {
-          "port": 7,
-          "speed": 25,
-          "slot": null,
-          "destination_node_id": 34,
-          "destination_port": 1,
-          "destination_slot": "pcie-slot1"
-        },
-        {
-          "port": 10,
-          "speed": 25,
-          "slot": null,
-          "destination_node_id": 34,
-          "destination_port": 2,
           "destination_slot": "pcie-slot1"
         },
         {
@@ -1332,7 +1300,7 @@
           "port": 47,
           "speed": 1,
           "slot": null,
-          "destination_node_id": 37,
+          "destination_node_id": 36,
           "destination_port": 1,
           "destination_slot": "mgmt"
         },
@@ -1340,7 +1308,7 @@
           "port": 48,
           "speed": 1,
           "slot": null,
-          "destination_node_id": 35,
+          "destination_node_id": 34,
           "destination_port": 1,
           "destination_slot": "bmc"
         },
@@ -1374,14 +1342,6 @@
       "type": "switch",
       "vendor": "aruba",
       "ports": [
-        {
-          "port": 29,
-          "speed": 1,
-          "slot": null,
-          "destination_node_id": 34,
-          "destination_port": 1,
-          "destination_slot": "bmc"
-        },
         {
           "port": 34,
           "speed": 1,
@@ -1450,7 +1410,7 @@
           "port": 47,
           "speed": 1,
           "slot": null,
-          "destination_node_id": 38,
+          "destination_node_id": 37,
           "destination_port": 1,
           "destination_slot": "mgmt"
         },
@@ -1458,7 +1418,7 @@
           "port": 48,
           "speed": 1,
           "slot": null,
-          "destination_node_id": 36,
+          "destination_node_id": 35,
           "destination_port": 1,
           "destination_slot": "bmc"
         },
@@ -2073,62 +2033,8 @@
       }
     },
     {
-      "common_name": "uan003",
-      "id": 34,
-      "architecture": "river_ncn_node_4_port",
-      "model": "river_ncn_node_4_port",
-      "type": "server",
-      "vendor": "hpe",
-      "ports": [
-        {
-          "port": 1,
-          "speed": 1,
-          "slot": "bmc",
-          "destination_node_id": 19,
-          "destination_port": 29,
-          "destination_slot": null
-        },
-        {
-          "port": 1,
-          "speed": 25,
-          "slot": "ocp",
-          "destination_node_id": 14,
-          "destination_port": 7,
-          "destination_slot": null
-        },
-        {
-          "port": 2,
-          "speed": 25,
-          "slot": "ocp",
-          "destination_node_id": 14,
-          "destination_port": 10,
-          "destination_slot": null
-        },
-        {
-          "port": 1,
-          "speed": 25,
-          "slot": "pcie-slot1",
-          "destination_node_id": 15,
-          "destination_port": 7,
-          "destination_slot": null
-        },
-        {
-          "port": 2,
-          "speed": 25,
-          "slot": "pcie-slot1",
-          "destination_node_id": 15,
-          "destination_port": 10,
-          "destination_slot": null
-        }
-      ],
-      "location": {
-        "rack": "x3000",
-        "elevation": "u25"
-      }
-    },
-    {
       "common_name": "pdu-x3000-001",
-      "id": 35,
+      "id": 34,
       "architecture": "pdu",
       "model": "pdu",
       "type": "none",
@@ -2150,7 +2056,7 @@
     },
     {
       "common_name": "pdu-x3000-000",
-      "id": 36,
+      "id": 35,
       "architecture": "pdu",
       "model": "pdu",
       "type": "none",
@@ -2172,7 +2078,7 @@
     },
     {
       "common_name": "sw-hsn-x3000-002",
-      "id": 37,
+      "id": 36,
       "architecture": "slingshot_hsn_switch",
       "model": "slingshot_hsn_switch",
       "type": "switch",
@@ -2194,7 +2100,7 @@
     },
     {
       "common_name": "sw-hsn-x3000-001",
-      "id": 38,
+      "id": 37,
       "architecture": "slingshot_hsn_switch",
       "model": "slingshot_hsn_switch",
       "type": "switch",
