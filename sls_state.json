@@ -28,6 +28,17 @@
         ]
       }
     },
+    "x1000": {
+      "Parent": "s0",
+      "Xname": "x1000",
+      "Type": "comptype_cabinet",
+      "Class": "Mountain",
+      "TypeString": "Cabinet",
+      "ExtraProperties": {
+        "Model": "EX3000",
+        "Networks": {}
+      }
+    },
     "x1000c0b0": {
       "Parent": "x1000",
       "Xname": "x1000c0",
@@ -83,6 +94,16 @@
       "Type": "comptype_chassis",
       "Class": "Mountain",
       "TypeString": "Chassis"
+    },
+    "x3000": {
+      "Parent": "s0",
+      "Xname": "x3000",
+      "Type": "comptype_cabinet",
+      "Class": "River",
+      "TypeString": "Cabinet",
+      "ExtraProperties": {
+        "Networks": {}
+      }
     },
     "x3000c0h18s1": {
       "Parent": "x3000c0h18",

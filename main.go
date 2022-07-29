@@ -89,8 +89,9 @@ type Location struct {
 	SubLocation string `json:"sub_location"` // TODO optional make ptr or add ignore empty
 }
 
-// TODO replace with the actual cabints.yaml
+// TODO replace with the actual cabinets.yaml
 // TODO Normalize xnames
+// TODO Verify xnames are unique
 type CabinetLookup map[csi.CabinetKind][]string
 
 func (cl CabinetLookup) CabinetKind(wantedCabinet string) (csi.CabinetKind, error) {
@@ -103,6 +104,18 @@ func (cl CabinetLookup) CabinetKind(wantedCabinet string) (csi.CabinetKind, erro
 	}
 
 	return "", fmt.Errorf("cabinet (%s) does not exist in cabinet lookup data", wantedCabinet)
+}
+
+func (cl CabinetLookup) CabinetExists(wantedCabinet string) bool {
+	for _, cabinets := range cl {
+		for _, cabinet := range cabinets {
+			if cabinet == wantedCabinet {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (cl CabinetLookup) CabinetClass(wantedCabinet string) (sls_common.CabinetType, error) {
@@ -266,6 +279,20 @@ func main() {
 			continue
 		}
 
+		// Verify cabinet exists (ignore CDUs)
+		if strings.HasPrefix(hardware.Xname, "x") {
+			cabinetXname, err := csi.CabinetForXname(hardware.Xname)
+			if err != nil {
+				panic(err)
+			}
+
+			if !cabinetLookup.CabinetExists(cabinetXname) {
+				err := fmt.Errorf("unknown cabinet (%s)", cabinetXname)
+				panic(err)
+			}
+		}
+
+		// Verify new hardware
 		if _, present := allHardware[hardware.Xname]; present {
 			err := fmt.Errorf("found duplicate xname %v", hardware.Xname)
 			panic(err)
@@ -300,6 +327,34 @@ func main() {
 		}
 
 		allHardware[mgmtSwtichConnector.Xname] = mgmtSwtichConnector
+	}
+
+	// Generate Cabinet Objects
+	for cabinetKind, cabinets := range cabinetLookup {
+		for _, cabinet := range cabinets {
+			class, err := cabinetKind.Class()
+			if err != nil {
+				panic(err)
+			}
+
+			extraProperties := sls_common.ComptypeCabinet{
+				Networks: map[string]map[string]sls_common.CabinetNetworks{}, // TODO this should be outright removed. MEDS and KEA no longer look here
+			}
+
+			if cabinetKind.IsModel() {
+				extraProperties.Model = string(cabinetKind)
+			}
+
+			hardware := sls_common.NewGenericHardware(cabinet, class, extraProperties)
+
+			// Verify new hardware
+			if _, present := allHardware[hardware.Xname]; present {
+				err := fmt.Errorf("found duplicate xname %v", hardware.Xname)
+				panic(err)
+			}
+
+			allHardware[hardware.Xname] = hardware
+		}
 	}
 
 	// Build up and the SLS state
