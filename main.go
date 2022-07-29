@@ -210,7 +210,7 @@ func buildSLSHardware(topologyNode TopologyNode, paddle Paddle) (sls_common.Gene
 		// TODO SLS does not know anything about CEC, because HMS software doesn't support them.
 		return sls_common.GenericHardware{}, nil
 	case "cmm":
-		return sls_common.GenericHardware{}, nil
+		return buildSLSChassisBMC(topologyNode.Location)
 	case "subrack":
 		return buildSLSCMC(topologyNode.Location)
 	case "pdu":
@@ -646,4 +646,26 @@ func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 		},
 		VendorName: vendorName,
 	}), nil
+}
+
+func buildSLSChassisBMC(location Location) (sls_common.GenericHardware, error) {
+	cabinetOrdinal, err := extractNumber(location.Rack)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+	}
+
+	chassisOrdinal, err := extractNumber(location.Elevation)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract chassis ordinal due to: %w", err)
+	}
+
+	xname := xnames.ChassisBMC{
+		Cabinet:    cabinetOrdinal,
+		Chassis:    chassisOrdinal,
+		ChassisBMC: 0,
+	}
+
+	class := sls_common.ClassMountain // TODO Need to support hill
+
+	return sls_common.NewGenericHardware(xname.String(), class, nil), nil
 }

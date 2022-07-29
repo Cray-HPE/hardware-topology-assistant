@@ -28,6 +28,62 @@
         ]
       }
     },
+    "x1000c0b0": {
+      "Parent": "x1000c0",
+      "Xname": "x1000c0b0",
+      "Type": "comptype_chassis_bmc",
+      "Class": "Mountain",
+      "TypeString": "ChassisBMC"
+    },
+    "x1000c1b0": {
+      "Parent": "x1000c1",
+      "Xname": "x1000c1b0",
+      "Type": "comptype_chassis_bmc",
+      "Class": "Mountain",
+      "TypeString": "ChassisBMC"
+    },
+    "x1000c2b0": {
+      "Parent": "x1000c2",
+      "Xname": "x1000c2b0",
+      "Type": "comptype_chassis_bmc",
+      "Class": "Mountain",
+      "TypeString": "ChassisBMC"
+    },
+    "x1000c3b0": {
+      "Parent": "x1000c3",
+      "Xname": "x1000c3b0",
+      "Type": "comptype_chassis_bmc",
+      "Class": "Mountain",
+      "TypeString": "ChassisBMC"
+    },
+    "x1000c4b0": {
+      "Parent": "x1000c4",
+      "Xname": "x1000c4b0",
+      "Type": "comptype_chassis_bmc",
+      "Class": "Mountain",
+      "TypeString": "ChassisBMC"
+    },
+    "x1000c5b0": {
+      "Parent": "x1000c5",
+      "Xname": "x1000c5b0",
+      "Type": "comptype_chassis_bmc",
+      "Class": "Mountain",
+      "TypeString": "ChassisBMC"
+    },
+    "x1000c6b0": {
+      "Parent": "x1000c6",
+      "Xname": "x1000c6b0",
+      "Type": "comptype_chassis_bmc",
+      "Class": "Mountain",
+      "TypeString": "ChassisBMC"
+    },
+    "x1000c7b0": {
+      "Parent": "x1000c7",
+      "Xname": "x1000c7b0",
+      "Type": "comptype_chassis_bmc",
+      "Class": "Mountain",
+      "TypeString": "ChassisBMC"
+    },
     "x3000c0h18s1": {
       "Parent": "x3000c0h18",
       "Xname": "x3000c0h18s1",
