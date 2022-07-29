@@ -6,8 +6,8 @@ import (
 	"log"
 
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
-	"github.com/mitchellh/mapstructure"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ipam"
+	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 )
 
 var canNetworkRaw = `
@@ -173,19 +173,6 @@ var canNetworkRaw = `
 	}
   }`
 
-func decodeNetworkExtraProperties(extraPropertiesRaw interface{}, extraProperties *sls_common.NetworkExtraProperties) error {
-	// Map this network to a usable structure.
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		DecodeHook: mapstructure.StringToIPHookFunc(),
-		Result:     extraProperties,
-	})
-	if err != nil {
-		return err
-	}
-
-	return decoder.Decode(extraPropertiesRaw)
-}
-
 // def find_next_available_ip(sls_subnet):
 //     subnet = netaddr.IPNetwork(sls_subnet["CIDR"])
 //
@@ -208,7 +195,7 @@ func main() {
 
 	// Map this network to a usable structure.
 	var networkExtraProperties sls_common.NetworkExtraProperties
-	err := decodeNetworkExtraProperties(canNetwork.ExtraPropertiesRaw, &networkExtraProperties)
+	err := sls.DecodeNetworkExtraProperties(canNetwork.ExtraPropertiesRaw, &networkExtraProperties)
 	if err != nil {
 		log.Fatalf("Failed to decode raw network extra properties to correct structure: %s", err)
 	}
