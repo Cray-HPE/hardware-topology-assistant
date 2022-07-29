@@ -857,7 +857,7 @@ func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 	case "aruba":
 		vendorName = fmt.Sprintf("1/1/%d", destinationPort.DestPort)
 	case "mellanox":
-		// TODO we don't support this
+		// TODO we don't support this for BMCs
 		fallthrough
 	default:
 		return sls_common.GenericHardware{}, fmt.Errorf("unexpected switch vendor (%s)", topologyNode.Vendor)
