@@ -7,6 +7,7 @@ import (
 	"os"
 
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
+	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 )
 
 func main() {
@@ -39,18 +40,19 @@ func main() {
 	}
 
 	// Identify missing hardware from either side
-	hardwareMissingFromA, err := HardwareSubtract(slsStateB, slsStateA)
+	hardwareMissingFromA, err := sls.HardwareSubtract(slsStateB, slsStateA)
 	if err != nil {
 		panic(err)
 	}
-	hardwareMissingFromB, err := HardwareSubtract(slsStateA, slsStateB)
+
+	hardwareMissingFromB, err := sls.HardwareSubtract(slsStateA, slsStateB)
 	if err != nil {
 		panic(err)
 	}
 
 	// Identify hardware present in both states
 	// Does not take into account differences in Class/ExtraProperties, just by the primary key of xname
-	identicalHardware, differentContents, err := HardwareUnion(slsStateA, slsStateB)
+	identicalHardware, differentContents, err := sls.HardwareUnion(slsStateA, slsStateB)
 	if err != nil {
 		panic(err)
 	}

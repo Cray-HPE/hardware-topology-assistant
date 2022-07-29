@@ -1,4 +1,4 @@
-package main
+package ccj
 
 // The following structures where taken from CSI (and slight renamed)
 // https://github.com/Cray-HPE/cray-site-init/blob/main/pkg/shcd/shcd.go

@@ -1,4 +1,4 @@
-package main
+package ccj
 
 import (
 	"fmt"
@@ -10,7 +10,15 @@ import (
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
+	topology_tool "github.hpe.com/sjostrand/topology-tool/pkg/topology-tool"
 )
+
+// Paddle Vendor to SLS Brand
+var vendorBrandMapping = map[string]string{
+	"aruba": "Aruba",
+	// TODO Dell
+	// TODO Mellanox
+}
 
 func extractNumber(numberRaw string) (int, error) {
 	matches := regexp.MustCompile(`(\d+)`).FindStringSubmatch(numberRaw)
@@ -27,7 +35,7 @@ func extractNumber(numberRaw string) (int, error) {
 	return number, nil
 }
 
-func buildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup CabinetLookup, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.GenericHardware, error) {
+func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup topology_tool.CabinetLookup, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.GenericHardware, error) {
 	// TODO use CANU files for lookup
 	switch topologyNode.Architecture {
 	case "cec":
@@ -341,10 +349,10 @@ func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
 	}
 
-	spaceOrdinal := 1                             // Defaults to 0 if this is the switch occupies the whole rack U. Not one half of it
-	if topologyNode.Location.SubLocation == "L" { // TODO will CANU always captailize it? No
+	spaceOrdinal := 1                                              // Defaults to 0 if this is the switch occupies the whole rack U. Not one half of it
+	if strings.ToLower(topologyNode.Location.SubLocation) == "l" { // TODO will CANU always captailize it? No
 		spaceOrdinal = 1
-	} else if topologyNode.Location.SubLocation == "R" {
+	} else if strings.ToLower(topologyNode.Location.SubLocation) == "r" {
 		spaceOrdinal = 2
 	}
 
@@ -410,7 +418,7 @@ func buildSLSCDUMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardwar
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassMountain, extraProperties), nil
 }
 
-func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNode TopologyNode, paddle Paddle) (sls_common.GenericHardware, error) {
+func BuildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNode TopologyNode, paddle Paddle) (sls_common.GenericHardware, error) {
 	hmsTypesToIgnore := map[xnametypes.HMSType]bool{
 		xnametypes.MgmtHLSwitch:  true,
 		xnametypes.MgmtSwitch:    true,
@@ -505,7 +513,7 @@ func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 	}), nil
 }
 
-func buildSLSChassisBMC(location Location, cl CabinetLookup) (sls_common.GenericHardware, error) {
+func buildSLSChassisBMC(location Location, cl topology_tool.CabinetLookup) (sls_common.GenericHardware, error) {
 	cabinetOrdinal, err := extractNumber(location.Rack)
 	if err != nil {
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
