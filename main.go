@@ -118,6 +118,7 @@ func main() {
 
 	supportedArchitectures := map[string]bool{
 		"network_v2_tds": true,
+		"network_v2":     true,
 	}
 	if !supportedArchitectures[paddle.Architecture] {
 		err := fmt.Errorf("unsupported paddle architecture (%v)", paddle.Architecture)
@@ -205,6 +206,11 @@ func extractNumber(numberRaw string) (int, error) {
 
 func buildSLSHardware(topologyNode TopologyNode, paddle Paddle) (sls_common.GenericHardware, error) {
 	switch topologyNode.Architecture {
+	case "cec":
+		// TODO SLS does not know anything about CEC, because HMS software doesn't support them.
+		return sls_common.GenericHardware{}, nil
+	case "cmm":
+		return sls_common.GenericHardware{}, nil
 	case "subrack":
 		return buildSLSCMC(topologyNode.Location)
 	case "pdu":
@@ -231,6 +237,8 @@ func buildSLSHardware(topologyNode TopologyNode, paddle Paddle) (sls_common.Gene
 			// TODO untested path
 			return buildSLSCDUMgmtSwitch(topologyNode)
 		}
+	case "customer_edge_router":
+		fallthrough
 	case "spine":
 		fallthrough
 	case "river_ncn_leaf":
@@ -490,8 +498,13 @@ func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware
 		MgmtHLSwitch:          spaceOrdinal,
 	}
 
-	slsBrand, ok := vendorBrandMapping[topologyNode.Vendor]
-	if !ok {
+	var slsBrand string
+	if brand, ok := vendorBrandMapping[topologyNode.Vendor]; ok {
+		slsBrand = brand
+	} else if topologyNode.Architecture == "customer_edge_router" {
+		// TODO This information is missing from the paddle, but is present in SLS via switch_metadata.csv
+		slsBrand = "Arista" // TODO HACK right now I think we only support Arista edge routers
+	} else {
 		return sls_common.GenericHardware{}, fmt.Errorf("unknown topology node vendor: (%s)", topologyNode.Vendor)
 	}
 
@@ -541,6 +554,15 @@ func buildSLSCDUMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardwar
 }
 
 func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNode TopologyNode, paddle Paddle) (sls_common.GenericHardware, error) {
+	hmsTypesToIgnore := map[xnametypes.HMSType]bool{
+		xnametypes.MgmtHLSwitch:  true,
+		xnametypes.MgmtSwitch:    true,
+		xnametypes.CDUMgmtSwitch: true,
+	}
+	if hmsTypesToIgnore[xnametypes.GetHMSType(hardware.Xname)] {
+		return sls_common.GenericHardware{}, nil
+	}
+
 	//
 	// Determine the xname of the device that this MgmtSwitchConnector will connect to
 	//
@@ -556,6 +578,9 @@ func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 	// Figure out what switch port the BMC/Controller that is connected to the HMN
 	//
 	slot := "bmc" // By default lets assume bmc.
+	if topologyNode.Architecture == "slingshot_hsn_switch" {
+		slot = "mgmt"
+	}
 
 	destinationPorts := topologyNode.FindPorts(slot)
 	if len(destinationPorts) == 0 {
@@ -621,5 +646,4 @@ func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 		},
 		VendorName: vendorName,
 	}), nil
-
 }
