@@ -9,9 +9,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
+	"gopkg.in/yaml.v2"
 )
 
 // The following structures where taken from CSI (and slight renamed)
@@ -87,6 +89,87 @@ type Location struct {
 	SubLocation string `json:"sub_location"` // TODO optional make ptr or add ignore empty
 }
 
+type CabinetLookup map[csi.CabinetKind][]string
+
+func (cl CabinetLookup) CabinetKind(wantedCabinet string) (csi.CabinetKind, error) {
+	for cabinetKind, cabinets := range cl {
+		for _, cabinet := range cabinets {
+			if cabinet == wantedCabinet {
+				return cabinetKind, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("cabinet (%s) does not exist in cabinet lookup data", wantedCabinet)
+}
+
+func (cl CabinetLookup) CabinetClass(wantedCabinet string) (sls_common.CabinetType, error) {
+	cabinetKind, err := cl.CabinetKind(wantedCabinet)
+	if err != nil {
+		return "", nil
+	}
+
+	return cabinetKind.Class()
+}
+
+func (cl CabinetLookup) CanCabinetContainAirCooledHardware(cabinetXname string) (bool, error) {
+	cabinetKind, err := cl.CabinetKind(cabinetXname)
+	if err != nil {
+		return false, err
+	}
+
+	cabinetClass, err := cabinetKind.Class()
+	if err != nil {
+		return false, err
+	}
+
+	if cabinetClass == sls_common.ClassRiver {
+		// River Cabinets can of course hold air-cooled hardware
+		return true, nil
+	} else if cabinetClass == sls_common.ClassHill {
+		// if cabinetKind == csi.CabinetKindEX2500 {
+		// 	if len(cabinetTemplate.AirCooledChassisList) >= 1 {
+		// 		// This is an EX2500 cabinet with a air cooled chassis in it
+		// 		return true, nil
+		// 	}
+
+		// 	// This ia an EX2500 cabinet with no air-cooled chassis
+		// 	return false, fmt.Errorf("hill cabinet (EX2500) %s does not contain any air-cooled chassis", cabinetXname)
+		// }
+
+		// Traditional Hill cabinet
+		return false, fmt.Errorf("hill cabinet (non EX2500) %s cannot contain air-cooled hardware", cabinetXname)
+
+	} else if cabinetClass == sls_common.ClassMountain {
+		return false, fmt.Errorf("mountain cabinet %s cannot contain air-cooled hardware", cabinetXname)
+	} else {
+		return false, fmt.Errorf("unknown cabinet class %s", cabinetClass)
+	}
+}
+
+func (cl *CabinetLookup) DetermineRiverChassis(cabinet xnames.Cabinet) (xnames.Chassis, error) {
+	// Check to see if this is even a cabinet that can have river hardware
+	_, err := cl.CanCabinetContainAirCooledHardware(cabinet.String())
+	if err != nil {
+		return xnames.Chassis{}, err
+	}
+
+	// Next, determine if this is a standard river cabinet for a EX2500 cabinet
+	// class, err := cl.CabinetClass(cabinet.String())
+	// if err != nil {
+	// 	return xnames.Chassis{}, err
+	// }
+
+	chassisInteger := 0
+	// TODO need a source of information for this
+	// if class == sls_common.ClassHill {
+	// 	// This is a EX2500 cabinet with a air cooled chassis
+	// 	chassisInteger = hillCabinetTemplate.AirCooledChassisList[0]
+	// }
+
+	return cabinet.Chassis(chassisInteger), nil
+}
+
 // Paddle Vendor to SLS Brand
 var vendorBrandMapping = map[string]string{
 	"aruba": "Aruba",
@@ -94,10 +177,8 @@ var vendorBrandMapping = map[string]string{
 	// TODO Mellanox
 }
 
-// TODO Mountain hardware can be learned from the number of CMMs present, and thier chassis numbers
-
 func main() {
-	if len(os.Args) != 2 {
+	if len(os.Args) != 3 {
 		panic("Incorrect number of CLI args provided")
 	}
 
@@ -125,6 +206,28 @@ func main() {
 		panic(err)
 	}
 
+	// Read in cabinet lookup
+	cabinetLookupRaw, err := ioutil.ReadFile(os.Args[2])
+	if err != nil {
+		panic(err)
+	}
+
+	var cabinetLookup CabinetLookup
+	if err := yaml.Unmarshal(cabinetLookupRaw, &cabinetLookup); err != nil {
+		panic(err)
+	}
+
+	// TODO remove for testing...
+	{
+		jsonRaw, err := json.MarshalIndent(cabinetLookup, "", "  ")
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("DEBUG: Cabinet lookup")
+		fmt.Println(string(jsonRaw))
+	}
+
 	// Iterate over the paddle file to build of SLS data
 	allHardware := map[string]sls_common.GenericHardware{}
 	for _, topologyNode := range paddle.Topology {
@@ -133,7 +236,7 @@ func main() {
 		//
 		// Build the SLS hardware representation
 		//
-		hardware, err := buildSLSHardware(topologyNode, paddle)
+		hardware, err := buildSLSHardware(topologyNode, paddle, cabinetLookup)
 		if err != nil {
 			panic(err)
 		}
@@ -211,13 +314,13 @@ func extractNumber(numberRaw string) (int, error) {
 	return number, nil
 }
 
-func buildSLSHardware(topologyNode TopologyNode, paddle Paddle) (sls_common.GenericHardware, error) {
+func buildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup CabinetLookup) (sls_common.GenericHardware, error) {
 	switch topologyNode.Architecture {
 	case "cec":
 		// TODO SLS does not know anything about CEC, because HMS software doesn't support them.
 		return sls_common.GenericHardware{}, nil
 	case "cmm":
-		return buildSLSChassisBMC(topologyNode.Location)
+		return buildSLSChassisBMC(topologyNode.Location, cabinetLookup)
 	case "subrack":
 		return buildSLSCMC(topologyNode.Location)
 	case "pdu":
@@ -655,7 +758,7 @@ func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 	}), nil
 }
 
-func buildSLSChassisBMC(location Location) (sls_common.GenericHardware, error) {
+func buildSLSChassisBMC(location Location, cl CabinetLookup) (sls_common.GenericHardware, error) {
 	cabinetOrdinal, err := extractNumber(location.Rack)
 	if err != nil {
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
@@ -672,7 +775,34 @@ func buildSLSChassisBMC(location Location) (sls_common.GenericHardware, error) {
 		ChassisBMC: 0,
 	}
 
-	class := sls_common.ClassMountain // TODO Need to support hill
+	class, err := cl.CabinetClass(xname.Parent().Parent().String())
+	if err != nil {
+		return sls_common.GenericHardware{}, err
+	}
 
 	return sls_common.NewGenericHardware(xname.String(), class, nil), nil
 }
+
+// TODO The following was taking from CSI, and has the broken NID allocation logic.
+// Also needs a source for the starting nid for the chassis.
+//
+// func buildLiquidCooledNodeHardware(chassis sls_common.GenericHardware) ([]sls_common.GenericHardware, error) {
+// 	for slotOrdinal := 0; slotOrdinal < 8; slotOrdinal++ {
+// 		for bmcOrdinal := 0; bmcOrdinal < 2; bmcOrdinal++ {
+// 			for nodeOrdinal := 0; nodeOrdinal < 2; nodeOrdinal++ {
+// 				// Construct the xname for the node
+// 				nodeXname := chassisXname.ComputeModule(slotOrdinal).NodeBMC(bmcOrdinal).Node(nodeOrdinal)
+//
+// 				node := g.buildSLSHardware(nodeXname, cabinetTemplate.Class, sls_common.ComptypeNode{
+// 					NID:     g.currentMountainNID,
+// 					Role:    "Compute",
+// 					Aliases: []string{fmt.Sprintf("nid%06d", g.currentMountainNID)},
+// 				})
+//
+// 				hardware = append(hardware, node)
+//
+// 				g.currentMountainNID++
+// 			}
+// 		}
+// 	}
+// }
