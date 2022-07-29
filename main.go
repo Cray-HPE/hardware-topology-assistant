@@ -11,6 +11,7 @@ import (
 
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
+	"github.com/Cray-HPE/hms-xname/xnametypes"
 )
 
 // The following structures where taken from CSI (and slight renamed)
@@ -128,6 +129,9 @@ func main() {
 	for _, topologyNode := range paddle.Topology {
 		fmt.Println(topologyNode.Architecture, topologyNode.CommonName)
 
+		//
+		// Build the SLS hardware representation
+		//
 		hardware, err := buildSLSHardware(topologyNode, paddle)
 		if err != nil {
 			panic(err)
@@ -144,6 +148,27 @@ func main() {
 		}
 
 		allHardware[hardware.Xname] = hardware
+
+		//
+		// Build the MgmtSwitchConnector for the hardware
+		//
+
+		mgmtSwtichConnector, err := buildSLSMgmtSwitchConnector(hardware, topologyNode, paddle)
+		if err != nil {
+			panic(err)
+		}
+
+		// Ignore empty mgmtSwtichConnectors
+		if mgmtSwtichConnector.Xname == "" {
+			continue
+		}
+
+		if _, present := allHardware[mgmtSwtichConnector.Xname]; present {
+			err := fmt.Errorf("found duplicate xname %v", mgmtSwtichConnector.Xname)
+			panic(err)
+		}
+
+		allHardware[mgmtSwtichConnector.Xname] = mgmtSwtichConnector
 	}
 
 	// Build up and the SLS state
@@ -512,5 +537,89 @@ func buildSLSCDUMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardwar
 		},
 	}
 
-	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
+	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassMountain, extraProperties), nil
+}
+
+func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNode TopologyNode, paddle Paddle) (sls_common.GenericHardware, error) {
+	//
+	// Determine the xname of the device that this MgmtSwitchConnector will connect to
+	//
+	var destinationXname string
+	if xnametypes.IsHMSTypeController(hardware.TypeString) {
+		// This this type *IS* the BMC or PDU, then don't use the parent, use the xname.
+		destinationXname = hardware.Xname
+	} else {
+		destinationXname = hardware.Parent
+	}
+
+	//
+	// Figure out what switch port the BMC/Controller that is connected to the HMN
+	//
+	slot := "bmc" // By default lets assume bmc.
+
+	destinationPorts := topologyNode.FindPorts(slot)
+	if len(destinationPorts) == 0 {
+		fmt.Printf("%s does not have a connection to the HMN\n", hardware.Xname)
+		return sls_common.GenericHardware{}, nil
+	} else if len(destinationPorts) != 1 {
+		return sls_common.GenericHardware{}, fmt.Errorf("unexpected number of '%s' ports found (%v) expected 1", slot, len(destinationPorts))
+	}
+	destinationPort := destinationPorts[0]
+
+	destinationTopologyNode, ok := paddle.FindNodeByID(destinationPort.DestNodeID)
+	if !ok {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to find destination topology node referenced by port with id (%v)", destinationPort.DestNodeID)
+	}
+
+	//
+	// Determine the xname of the MgmtSwitch
+	//
+	// TODO the following could be reused, as it was copied from buildSLSMgmtSwitch, and return a xnames.MgmtSwitch struct
+	cabinetOrdinal, err := extractNumber(destinationTopologyNode.Location.Rack)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+	}
+
+	rackUOrdinal, err := extractNumber(destinationTopologyNode.Location.Elevation)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
+	}
+
+	mgmtSwitchXname := xnames.MgmtSwitch{
+		Cabinet:    cabinetOrdinal,
+		Chassis:    0, // TODO EX2500
+		MgmtSwitch: rackUOrdinal,
+	}
+
+	//
+	// Determine the xname of the connector
+	//
+	xname := mgmtSwitchXname.MgmtSwitchConnector(destinationPort.DestPort)
+
+	//
+	// Build the SLS object
+	//
+
+	// Calculate the vendor name for the ethernet interfaces
+	// Dell switches use: ethernet1/1/1
+	// Aruba switches use: 1/1/1
+	var vendorName string
+	switch destinationTopologyNode.Vendor {
+	case "dell":
+		vendorName = fmt.Sprintf("ethernet1/1/%d", destinationPort.DestPort)
+	case "aruba":
+		vendorName = fmt.Sprintf("1/1/%d", destinationPort.DestPort)
+	case "mellanox":
+		// TODO we don't support this
+		fallthrough
+	default:
+		return sls_common.GenericHardware{}, fmt.Errorf("unexpected switch vendor (%s)", topologyNode.Vendor)
+	}
+	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, sls_common.ComptypeMgmtSwitchConnector{
+		NodeNics: []string{
+			destinationXname,
+		},
+		VendorName: vendorName,
+	}), nil
+
 }
