@@ -151,6 +151,13 @@ func main() {
 		allHardware[hardware.Xname] = hardware
 
 		//
+		// Build up derived hardware
+		//
+		if hardware.TypeString == xnametypes.ChassisBMC {
+			allHardware[hardware.Xname] = sls_common.NewGenericHardware(hardware.Parent, hardware.Class, nil)
+		}
+
+		//
 		// Build the MgmtSwitchConnector for the hardware
 		//
 
@@ -559,7 +566,7 @@ func buildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 		xnametypes.MgmtSwitch:    true,
 		xnametypes.CDUMgmtSwitch: true,
 	}
-	if hmsTypesToIgnore[xnametypes.GetHMSType(hardware.Xname)] {
+	if hmsTypesToIgnore[xnametypes.GetHMSType(hardware.Xname)] || hardware.Class != sls_common.ClassRiver {
 		return sls_common.GenericHardware{}, nil
 	}
 
