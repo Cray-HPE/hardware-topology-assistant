@@ -1,0 +1,15 @@
+---
+# Additional application node prefixes
+prefixes:
+  - slurm
+
+# HSM Subroles
+prefix_hsm_subroles:
+  slurm: SLURM
+
+# Application Node alias
+aliases:
+  x3000c0s15b0n0: ["uan01"]
+  x3000c0s16b0n0: ["uan02"]
+  x3000c0s25b0n0: ["uan03"]
+  x3000c0s23b0n0: ["slurm01"]

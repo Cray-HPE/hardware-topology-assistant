@@ -240,8 +240,9 @@
       "TypeString": "Node",
       "ExtraProperties": {
         "Role": "Application",
+        "SubRole": "UAN",
         "Aliases": [
-          "uan001"
+          "uan01"
         ]
       }
     },
@@ -253,8 +254,9 @@
       "TypeString": "Node",
       "ExtraProperties": {
         "Role": "Application",
+        "SubRole": "UAN",
         "Aliases": [
-          "uan002"
+          "uan02"
         ]
       }
     },
@@ -280,8 +282,9 @@
       "TypeString": "Node",
       "ExtraProperties": {
         "Role": "Application",
+        "SubRole": "UAN",
         "Aliases": [
-          "uan003"
+          "uan03"
         ]
       }
     },

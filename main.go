@@ -89,6 +89,8 @@ type Location struct {
 	SubLocation string `json:"sub_location"` // TODO optional make ptr or add ignore empty
 }
 
+// TODO replace with the actual cabints.yaml
+// TODO Normalize xnames
 type CabinetLookup map[csi.CabinetKind][]string
 
 func (cl CabinetLookup) CabinetKind(wantedCabinet string) (csi.CabinetKind, error) {
@@ -178,7 +180,7 @@ var vendorBrandMapping = map[string]string{
 }
 
 func main() {
-	if len(os.Args) != 3 {
+	if len(os.Args) != 4 {
 		panic("Incorrect number of CLI args provided")
 	}
 
@@ -228,6 +230,24 @@ func main() {
 		fmt.Println(string(jsonRaw))
 	}
 
+	// Read in application_node_config.yaml
+	// TODO the prefixes list is not being used, as we are assuming all unknown nodes are application
+	applicationNodeRaw, err := ioutil.ReadFile(os.Args[3])
+	if err != nil {
+		panic(err)
+	}
+
+	var applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig
+	if err := yaml.Unmarshal(applicationNodeRaw, &applicationNodeConfig); err != nil {
+		panic(err)
+	}
+	if err := applicationNodeConfig.Normalize(); err != nil {
+		panic(err)
+	}
+	if err := applicationNodeConfig.Validate(); err != nil {
+		panic(err)
+	}
+
 	// Iterate over the paddle file to build of SLS data
 	allHardware := map[string]sls_common.GenericHardware{}
 	for _, topologyNode := range paddle.Topology {
@@ -236,7 +256,7 @@ func main() {
 		//
 		// Build the SLS hardware representation
 		//
-		hardware, err := buildSLSHardware(topologyNode, paddle, cabinetLookup)
+		hardware, err := buildSLSHardware(topologyNode, paddle, cabinetLookup, applicationNodeConfig)
 		if err != nil {
 			panic(err)
 		}
@@ -314,7 +334,7 @@ func extractNumber(numberRaw string) (int, error) {
 	return number, nil
 }
 
-func buildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup CabinetLookup) (sls_common.GenericHardware, error) {
+func buildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup CabinetLookup, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.GenericHardware, error) {
 	switch topologyNode.Architecture {
 	case "cec":
 		// TODO SLS does not know anything about CEC, because HMS software doesn't support them.
@@ -337,7 +357,7 @@ func buildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup Ca
 		fallthrough
 	case "river_ncn_node_4_port":
 		// All node architecture needs to go through this function
-		return buildSLSNode(topologyNode, paddle)
+		return buildSLSNode(topologyNode, paddle, applicationNodeConfig)
 	case "mountain_compute_leaf": // CDUMgmtSwitch
 		if strings.HasPrefix(topologyNode.Location.Rack, "x") {
 			// This CDU MgmtSwitch is present in a river cabinet.
@@ -426,7 +446,7 @@ func buildSLSCMC(location Location) (sls_common.GenericHardware, error) {
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, nil), nil
 }
 
-func buildSLSNode(topologyNode TopologyNode, paddle Paddle) (sls_common.GenericHardware, error) {
+func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.GenericHardware, error) {
 	cabinetOrdinal, err := extractNumber(topologyNode.Location.Rack)
 	if err != nil {
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
@@ -475,10 +495,6 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle) (sls_common.GenericH
 		// Must be an application node
 		// Application nodes don't have a NID due to reasons.
 		extraProperties.Role = "Application"
-		// extraProperties.SubRole = "" // TODO need the application node config
-		extraProperties.Aliases = []string{
-			topologyNode.CommonName,
-		}
 	}
 
 	// Determine the BMC ordinal and override the rack U if needed
@@ -539,6 +555,43 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle) (sls_common.GenericH
 		ComputeModule: rackUOrdinal,
 		NodeBMC:       bmcOrdinal,
 		Node:          0, // Assumption: Currently all river hardware that CSM supports BMCs only control one node.
+	}
+
+	if extraProperties.Role == "Application" {
+		// Merge default Application node prefixes with the user provided prefixes.
+		prefixes := []string{}
+		prefixes = append(prefixes, applicationNodeConfig.Prefixes...)
+		prefixes = append(prefixes, csi.DefaultApplicationNodePrefixes...)
+
+		// Merge default Application node subroles with the user provided subroles. User provided subroles can override the default subroles
+		subRoles := map[string]string{}
+		for prefix, subRole := range csi.DefaultApplicationNodeSubroles {
+			subRoles[prefix] = subRole
+		}
+		for prefix, subRole := range applicationNodeConfig.PrefixHSMSubroles {
+			subRoles[prefix] = subRole
+		}
+
+		// Check source to see if it matches any know application node prefix
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(topologyNode.CommonName, prefix) {
+				// Found an application node!
+				extraProperties.SubRole = subRoles[prefix]
+			}
+		}
+
+		// Question: Does it make sense for application nodes to not have a sub-role? It has caused more confision then it has helped.
+
+		// TODO/Question CANU common name or provided aliases via application node config?
+		// TODO CANU Paddle has 3 padded zeros for UANs like uan003, but customers may define 2 zero passing like uan03.
+		// extraProperties.Aliases = []string{
+		// 	topologyNode.CommonName,
+		// }
+		extraProperties.Aliases = applicationNodeConfig.Aliases[xname.String()]
+
+		if len(extraProperties.Aliases) == 0 {
+			return sls_common.GenericHardware{}, fmt.Errorf("application node has no defined aliases")
+		}
 	}
 
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
