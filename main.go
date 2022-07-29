@@ -602,7 +602,7 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfi
 		if extraProperties.NID == 0 {
 			return sls_common.GenericHardware{}, fmt.Errorf("are zero NIDs even supported? I don't think so...")
 		}
-		bmcOrdinal = (extraProperties.NID%4 - 1) + 1
+		bmcOrdinal = ((extraProperties.NID - 1) % 4) + 1
 	}
 
 	// TODO Is this ia dual node chassis?
