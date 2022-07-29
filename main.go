@@ -16,6 +16,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// TODO liquid-cooled nodes are missing
+// TODO management NCNs are missing NIDs
+// TODO network hardware objects are missing IPs (which is a hold over)
+
 // The following structures where taken from CSI (and slight renamed)
 // https://github.com/Cray-HPE/cray-site-init/blob/main/pkg/shcd/shcd.go
 
