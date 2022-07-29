@@ -55,31 +55,44 @@ func main() {
 		panic(err)
 	}
 
-	// Identify hardware that has different class
-
-	// Identify hardware that have different extra properties
-
 	//
 	// Generate a report
 	//
 
 	fmt.Println("Identical hardware between A and B")
+	if len(identicalHardware) == 0 {
+		fmt.Println("  None")
+	}
 	for _, pair := range identicalHardware {
 		fmt.Printf("  %s\n", pair.Xname)
 	}
 
 	fmt.Println("Common hardware between A and B with different class or extra properties")
+	if len(differentContents) == 0 {
+		fmt.Println("  None")
+	}
 	for _, pair := range differentContents {
 		fmt.Printf("  %s\n", pair.Xname)
 	}
 
-	fmt.Println("Hardware missing from A")
+	fmt.Println("Hardware missing from A (added to system)")
+	if len(hardwareMissingFromA) == 0 {
+		fmt.Println("  None")
+	}
 	for _, hardware := range hardwareMissingFromA {
+		// hardwareRaw, err := json.Marshal(hardware)
+		// if err != nil {
+		// 	panic(err)
+		// }
+
 		fmt.Printf("  %s\n", hardware.Xname)
 	}
 
 	fmt.Println()
-	fmt.Println("Hardware missing from B")
+	fmt.Println("Hardware missing from B (removed from system)")
+	if len(hardwareMissingFromB) == 0 {
+		fmt.Println("  None")
+	}
 	for _, hardware := range hardwareMissingFromB {
 		fmt.Printf("  %s\n", hardware.Xname)
 	}
