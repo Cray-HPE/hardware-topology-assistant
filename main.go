@@ -198,7 +198,14 @@ func buildSLSHardware(topologyNode TopologyNode, paddle Paddle) (sls_common.Gene
 		// All node architecture needs to go through this function
 		return buildSLSNode(topologyNode, paddle)
 	case "mountain_compute_leaf": // CDUMgmtSwitch
-		return sls_common.GenericHardware{}, nil
+		if strings.HasPrefix(topologyNode.Location.Rack, "x") {
+			// This CDU MgmtSwitch is present in a river cabinet.
+			// This is normally seen on newer TDS/Hill cabinet systems
+			return buildSLSMgmtHLSwitch(topologyNode)
+		} else if strings.HasPrefix(topologyNode.Location.Rack, "cdu") {
+			// TODO untested path
+			return buildSLSCDUMgmtSwitch(topologyNode)
+		}
 	case "spine":
 		fallthrough
 	case "river_ncn_leaf":
@@ -477,5 +484,33 @@ func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware
 }
 
 func buildSLSCDUMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+	cduOrdinal, err := extractNumber(topologyNode.Location.Rack)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+	}
 
+	rackUOrdinal, err := extractNumber(topologyNode.Location.Elevation)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
+	}
+
+	xname := xnames.CDUMgmtSwitch{
+		CDU:           cduOrdinal,
+		CDUMgmtSwitch: rackUOrdinal,
+	}
+
+	slsBrand, ok := vendorBrandMapping[topologyNode.Vendor]
+	if !ok {
+		return sls_common.GenericHardware{}, fmt.Errorf("unknown topology node vendor: (%s)", topologyNode.Vendor)
+	}
+
+	extraProperties := sls_common.ComptypeCDUMgmtSwitch{
+		Brand: slsBrand,
+		Model: topologyNode.Model,
+		Aliases: []string{
+			topologyNode.CommonName,
+		},
+	}
+
+	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
 }
