@@ -35,6 +35,12 @@ type IPReservationChange struct {
 	NetworkName   string
 	SubnetName    string
 	IPReservation sls_common.IPReservation
+
+	// TODO have a better description of what caused the changed
+
+	// This is the hardware object that triggered the change
+	// If empty, then this was not changed by hardware
+	ChangedByXname string
 }
 
 type TopologyChanges struct {
@@ -181,6 +187,9 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 		}
 	}
 
+	// Allocate UAN IPs on the CAN/CHN/CMN(?)
+	// TODO
+
 	// Allocation Switch IPs
 	// Note: The hardware being added is sorted by xname so this should be deterministic
 	for i, hardware := range hardwareAdded {
@@ -234,9 +243,10 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 
 				fmt.Printf("Allocated IP %s in subnet network_hardware in network %s for switch %s (%s) \n", ipReservation.IPAddress.String(), networkName, hardware.Xname, aliases[0])
 				ipReservationsAdded = append(ipReservationsAdded, IPReservationChange{
-					NetworkName:   networkName,
-					SubnetName:    "network_hardware",
-					IPReservation: ipReservation,
+					NetworkName:    networkName,
+					SubnetName:     "network_hardware",
+					IPReservation:  ipReservation,
+					ChangedByXname: hardware.Xname,
 				})
 
 				// Push in the network IP Reservation into the subnet
@@ -431,7 +441,6 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 		fmt.Printf("  - %s\n", string(hardwareRaw))
 	}
 
-	fmt.Println()
 	fmt.Println("Hardware removed from system")
 	if len(hardwareRemoved) == 0 {
 		fmt.Println("  None")
@@ -445,6 +454,8 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 		fmt.Printf("  %s\n", hardware.Xname)
 		fmt.Printf("  - %s\n", string(hardwareRaw))
 	}
+
+	fmt.Println()
 }
 
 func (te *TopologyEngine) determineCabinetNetwork(networkPrefix string, class sls_common.CabinetType) (string, error) {

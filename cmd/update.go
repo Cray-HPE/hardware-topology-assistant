@@ -14,9 +14,11 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/Cray-HPE/cray-site-init/pkg/bss"
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
+	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -45,6 +47,8 @@ to quickly create a Cobra application.`,
 		// Setup Context
 		ctx := setupContext()
 
+		// TODO deal with getting an API token
+
 		// Setup HTTP client
 		httpClient := retryablehttp.NewClient()
 
@@ -53,6 +57,17 @@ to quickly create a Cobra application.`,
 		var slsClient *sls_client.SLSClient
 		if strings.HasPrefix(currentSLSStateLocation, "http") {
 			slsClient = sls_client.NewSLSClient(currentSLSStateLocation, httpClient.StandardClient(), "")
+		}
+
+		// Setup BSS client
+		bssURL := v.GetString("bss-url")
+		var bssClient *bss.UtilsClient
+		if bssURL != "" {
+			fmt.Printf("Using BSS file at %s\n", bssURL)
+
+			bssClient = bss.NewBSSClient(bssURL, httpClient.StandardClient(), "todo_token")
+		} else {
+			fmt.Println("Connection to BSS disabled")
 		}
 
 		//
@@ -176,15 +191,48 @@ to quickly create a Cobra application.`,
 		// Determine changes requires to downstream services from SLS. Like HSM and BSS
 		//
 
+		// TODO retrieve global BSS boot parameters
+		// TODO verify new host records are unique (IP and alias)
+
+		bssHostRecordsToAdd := []bss.HostRecord{}
+		for _, addedReservation := range topologyChanges.IPReservationsAdded {
+			// Check for IP added reservations due to hardware
+			switch xnametypes.GetHMSType(addedReservation.ChangedByXname) {
+			case xnametypes.CDUMgmtSwitch:
+				fallthrough
+			case xnametypes.MgmtHLSwitch:
+				fallthrough
+			case xnametypes.MgmtSwitch:
+				bssHostRecordsToAdd = append(bssHostRecordsToAdd, bss.HostRecord{
+					IP:      addedReservation.IPReservation.IPAddress.String(),
+					Aliases: addedReservation.IPReservation.Aliases,
+				})
+			case xnametypes.Node:
+				// Management Node are ignored for now, as that process is a lot harder
+				// Application node changes don't need to live in BSS. Only static IPs for management NCNs.
+			}
+		}
+
+		// TODO add cabinet routes
+
+		if len(bssHostRecordsToAdd) == 0 {
+			fmt.Println("No host records to add to BSS Global boot parameters")
+		} else {
+			fmt.Println("Updating BSS Global boot parameters")
+			fmt.Printf("  Added host records: %d\n", len(bssHostRecordsToAdd))
+			// TODO PUT to BSS
+			_ = bssClient
+		}
+
 		//
 		// Perform changes to SLS/HSM/BSS on the system to reflect the updated state.
 		//
 
 		// Add new hardware
 		if len(topologyChanges.HardwareAdded) == 0 {
-			fmt.Println("No new hardware added")
+			fmt.Println("No hardware added")
 		} else {
-			fmt.Println("Adding new hardware to SLS")
+			fmt.Printf("Adding new hardware to SLS (count %d)\n", len(topologyChanges.HardwareAdded))
 			for _, hardware := range topologyChanges.HardwareAdded {
 				if slsClient != nil {
 					slsClient.PutHardware(ctx, hardware)
@@ -196,7 +244,7 @@ to quickly create a Cobra application.`,
 		if len(topologyChanges.ModifiedNetworks) == 0 {
 			fmt.Println("No SLS network changes required")
 		} else {
-			fmt.Println("Updating modified networks in SLS")
+			fmt.Printf("Updating modified networks in SLS (count %s)\n", len(topologyChanges.ModifiedNetworks))
 			for _, modifiedNetwork := range topologyChanges.ModifiedNetworks {
 				if slsClient != nil {
 					slsClient.PutNetwork(ctx, modifiedNetwork)
@@ -223,6 +271,7 @@ func init() {
 	// TODO Would be cool if this could work with both HTTP(s) with a SLS service, and
 	// locally with a SLS state file
 	updateCmd.Flags().String("sls-current-state", "http://localhost:8376", "Location of the current SLS state")
+	updateCmd.Flags().String("bss-url", "http://localhost:27778", "URL to BSS")
 
 	updateCmd.Flags().String("cabinet-lookup", "cabinet_lookup.yaml", "YAML containing extra cabinet metadata")
 	updateCmd.Flags().String("application-node-config", "application_node_config.yaml", "YAML to control Application node identification during the SLS State generation")
