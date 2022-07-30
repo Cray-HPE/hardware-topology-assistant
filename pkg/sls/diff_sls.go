@@ -1,6 +1,7 @@
 package sls
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -84,7 +85,36 @@ func HardwareUnion(a, b sls_common.SLSState) (identicalHardware []sls_common.Gen
 		// Next check to see if the extra properties between the two hardware objects
 		// TODO maybe we should ignore fields like IPv4 fields during the comparison
 		// as that is something that we don't know when generating from the CCJ
-		if !reflect.DeepEqual(hardwareA.ExtraPropertiesRaw, hardwareB.ExtraPropertiesRaw) {
+
+		extraPropertiesA, err := DecodeHardwareExtraProperties(hardwareA)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode extra properties on (%s): %w", hardwareA.Xname, err)
+		}
+
+		extraPropertiesB, err := DecodeHardwareExtraProperties(hardwareB)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode extra properties on (%s): %w", hardwareB.Xname, err)
+		}
+
+		// Expected Hardware json
+		hardwareRawA, err := json.Marshal(extraPropertiesA)
+		if err != nil {
+			panic(err)
+		}
+
+		// Actual Hardware json
+		hardwareRawB, err := json.Marshal(extraPropertiesB)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("raw    - %T - %T\n", hardwareA.ExtraPropertiesRaw, hardwareB.ExtraPropertiesRaw)
+		fmt.Printf("decode - %T - %T\n", extraPropertiesA, extraPropertiesB)
+		fmt.Printf("  - A: %s\n", string(hardwareRawA))
+		fmt.Printf("  - B: %s\n", string(hardwareRawB))
+		fmt.Println()
+
+		if !reflect.DeepEqual(extraPropertiesA, extraPropertiesB) {
 			differingContents = append(differingContents, hardwarePair)
 			continue
 		}

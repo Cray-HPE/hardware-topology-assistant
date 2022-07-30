@@ -355,6 +355,20 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 	}
 	for _, pair := range hardwareWithDifferingValues {
 		fmt.Printf("  %s\n", pair.Xname)
+
+		// Expected Hardware json
+		hardwareRaw, err := json.Marshal(pair.HardwareA)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("  - Expected: %s\n", string(hardwareRaw))
+
+		// Actual Hardware json
+		hardwareRaw, err = json.Marshal(pair.HardwareA)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("  - Actual:   %s\n", string(hardwareRaw))
 	}
 
 	fmt.Println("Hardware added to the system")
@@ -367,7 +381,8 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 			panic(err)
 		}
 
-		fmt.Printf("  %s - %s\n", hardware.Xname, string(hardwareRaw))
+		fmt.Printf("  %s\n", hardware.Xname)
+		fmt.Printf("  - %s\n", string(hardwareRaw))
 	}
 
 	fmt.Println()
@@ -381,7 +396,8 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 			panic(err)
 		}
 
-		fmt.Printf("  %s - %s\n", hardware.Xname, string(hardwareRaw))
+		fmt.Printf("  %s\n", hardware.Xname)
+		fmt.Printf("  - %s\n", string(hardwareRaw))
 	}
 }
 
