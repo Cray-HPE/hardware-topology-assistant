@@ -49,6 +49,8 @@ type GenericHardwarePair struct {
 }
 
 // Identify hardware
+// Note when comparing hardware network information like IP address and subnets are not considered.
+// TODO make striping of networking information toggable
 func HardwareUnion(a, b sls_common.SLSState) (identicalHardware []sls_common.GenericHardware, differingContents []GenericHardwarePair, err error) {
 	// Build up a lookup map for the hardware in set B
 	bHardwareMap := map[string]sls_common.GenericHardware{}
@@ -90,11 +92,13 @@ func HardwareUnion(a, b sls_common.SLSState) (identicalHardware []sls_common.Gen
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode extra properties on (%s): %w", hardwareA.Xname, err)
 		}
+		extraPropertiesA = stripIpInformationFromHardware(extraPropertiesA)
 
 		extraPropertiesB, err := DecodeHardwareExtraProperties(hardwareB)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode extra properties on (%s): %w", hardwareB.Xname, err)
 		}
+		extraPropertiesB = stripIpInformationFromHardware(extraPropertiesB)
 
 		// Expected Hardware json
 		hardwareRawA, err := json.Marshal(extraPropertiesA)
@@ -132,4 +136,22 @@ func HardwareUnion(a, b sls_common.SLSState) (identicalHardware []sls_common.Gen
 	})
 
 	return
+}
+
+func stripIpInformationFromHardware(extraPropertiesRaw interface{}) interface{} {
+	switch ep := extraPropertiesRaw.(type) {
+	case sls_common.ComptypeCabinet:
+		ep.Networks = nil
+		return ep
+	case sls_common.ComptypeMgmtHLSwitch:
+		ep.IP4Addr = ""
+		ep.IP6Addr = ""
+		return ep
+	case sls_common.ComptypeMgmtSwitch:
+		ep.IP4Addr = ""
+		ep.IP6Addr = ""
+		return ep
+	}
+
+	return extraPropertiesRaw
 }

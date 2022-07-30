@@ -27,9 +27,24 @@ type EngineInput struct {
 	CurrentSLSState sls_common.SLSState
 }
 
+type SubnetChange struct {
+	NetworkName string
+	Subnet      sls_common.IPV4Subnet
+}
+type IPReservationChange struct {
+	NetworkName   string
+	SubnetName    string
+	IPReservation sls_common.IPReservation
+}
+
 type TopologyChanges struct {
+	// The following fields are meant to pushed back into SLS
 	HardwareAdded    []sls_common.GenericHardware
 	ModifiedNetworks map[string]sls_common.Network
+
+	// The following fields are for book keeping to trigger other events
+	SubnetsAdded        []SubnetChange
+	IPReservationsAdded []IPReservationChange
 }
 
 func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
@@ -95,6 +110,10 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 		networkExtraProperties[networkName] = &ep
 	}
 
+	// More bookkeeping to keep track of what network items have changed at a more granular level
+	subnetsAdded := []SubnetChange{}
+	ipReservationsAdded := []IPReservationChange{}
+
 	// First look for any new cabinets, and allocation an subnet for them
 	// Note: The hardware being added is sorted by xname so this should be deterministic
 	for i, hardware := range hardwareAdded {
@@ -129,6 +148,10 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 				}
 
 				fmt.Printf("Allocated subnet %s in network %s for %s\n", subnet.CIDR, networkName, hardware.Xname)
+				subnetsAdded = append(subnetsAdded, SubnetChange{
+					NetworkName: networkName,
+					Subnet:      subnet,
+				})
 
 				// Push in the newly created subnet into the SLS network
 				networkExtraProperties.Subnets = append(networkExtraProperties.Subnets, subnet)
@@ -210,6 +233,11 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 				}
 
 				fmt.Printf("Allocated IP %s in subnet network_hardware in network %s for switch %s (%s) \n", ipReservation.IPAddress.String(), networkName, hardware.Xname, aliases[0])
+				ipReservationsAdded = append(ipReservationsAdded, IPReservationChange{
+					NetworkName:   networkName,
+					SubnetName:    "network_hardware",
+					IPReservation: ipReservation,
+				})
 
 				// Push in the network IP Reservation into the subnet
 				slsSubnet.IPReservations = append(slsSubnet.IPReservations, ipReservation)
@@ -245,6 +273,9 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	return &TopologyChanges{
 		HardwareAdded:    hardwareAdded,
 		ModifiedNetworks: modifiedNetworksSet,
+
+		SubnetsAdded:        subnetsAdded,
+		IPReservationsAdded: ipReservationsAdded,
 	}, nil
 }
 

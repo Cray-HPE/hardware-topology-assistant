@@ -181,18 +181,26 @@ to quickly create a Cobra application.`,
 		//
 
 		// Add new hardware
-		fmt.Println("Adding new hardware to SLS")
-		for _, hardware := range topologyChanges.HardwareAdded {
-			if slsClient != nil {
-				slsClient.PutHardware(ctx, hardware)
+		if len(topologyChanges.HardwareAdded) == 0 {
+			fmt.Println("No new hardware added")
+		} else {
+			fmt.Println("Adding new hardware to SLS")
+			for _, hardware := range topologyChanges.HardwareAdded {
+				if slsClient != nil {
+					slsClient.PutHardware(ctx, hardware)
+				}
 			}
 		}
 
 		// Update modified networks
-		fmt.Println("Updating modified networks in SLS")
-		for _, modifiedNetwork := range topologyChanges.ModifiedNetworks {
-			if slsClient != nil {
-				slsClient.PutNetwork(ctx, modifiedNetwork)
+		if len(topologyChanges.ModifiedNetworks) == 0 {
+			fmt.Println("No SLS network changes required")
+		} else {
+			fmt.Println("Updating modified networks in SLS")
+			for _, modifiedNetwork := range topologyChanges.ModifiedNetworks {
+				if slsClient != nil {
+					slsClient.PutNetwork(ctx, modifiedNetwork)
+				}
 			}
 		}
 	},
