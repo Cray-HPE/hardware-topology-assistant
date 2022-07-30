@@ -14,7 +14,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/Cray-HPE/cray-site-init/pkg/bss"
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
@@ -23,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.hpe.com/sjostrand/topology-tool/internal/engine"
+	"github.hpe.com/sjostrand/topology-tool/pkg/bss"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
 	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 	"gopkg.in/yaml.v2"
@@ -61,7 +61,7 @@ to quickly create a Cobra application.`,
 
 		// Setup BSS client
 		bssURL := v.GetString("bss-url")
-		var bssClient *bss.UtilsClient
+		var bssClient *bss.BSSClient
 		if bssURL != "" {
 			fmt.Printf("Using BSS file at %s\n", bssURL)
 
@@ -155,6 +155,15 @@ to quickly create a Cobra application.`,
 				panic(err) // TODO
 			}
 		}
+
+		// TOOD Ideally we could add the initial set of hardware to SLS, if the systems networking information
+		// is known.
+		if len(currentSLSState.Networks) == 0 {
+			fmt.Println("Refusing to continue as the current SLS state does not contain networking information")
+			return
+		}
+
+		// var bssGlobalBootparameters bssTypes.BootParams
 
 		// TODO HACK reading from file
 
