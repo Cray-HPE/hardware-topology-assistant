@@ -153,7 +153,7 @@ func AllocateCabinetSubnet(slsNetwork sls_common.NetworkExtraProperties, xname x
 	}
 
 	// Verify this subnet is new
-	subnetName := fmt.Sprintf("%d", xname.Cabinet)
+	subnetName := fmt.Sprintf("cabinet_%d", xname.Cabinet)
 	for _, otherSubnet := range slsNetwork.Subnets {
 		if otherSubnet.Name == subnetName {
 			return sls_common.IPV4Subnet{}, fmt.Errorf("subnet (%s) already exists", subnetName)

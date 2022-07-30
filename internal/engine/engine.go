@@ -27,12 +27,12 @@ type EngineInput struct {
 	CurrentSLSState sls_common.SLSState
 }
 
-type EngineResult struct {
+type TopologyChanges struct {
 	HardwareAdded                  []sls_common.GenericHardware
 	ModifiedNetworkExtraProperties map[string]*sls_common.NetworkExtraProperties
 }
 
-func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
+func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	// Build up the expected SLS hardware state from the provided CCJ
 	expectedSLSState, err := te.buildExpectedHardwareState()
 	if err != nil {
@@ -96,6 +96,7 @@ func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
 	}
 
 	// First look for any new cabinets, and allocation an subnet for them
+	// Note: The hardware being added is sorted by xname so this should be deterministic
 	for i, hardware := range hardwareAdded {
 		if hardware.TypeString == xnametypes.Cabinet {
 			// TODO In the case of added liquid-cooled cabinets the HMN_MTN or NMN_MTN networks may not exist.
@@ -158,6 +159,7 @@ func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
 	}
 
 	// Allocation Switch IPs
+	// Note: The hardware being added is sorted by xname so this should be deterministic
 	for i, hardware := range hardwareAdded {
 		hmsType := hardware.TypeString
 		if hmsType == xnametypes.CDUMgmtSwitch || hmsType == xnametypes.MgmtHLSwitch || hmsType == xnametypes.MgmtSwitch {
@@ -232,7 +234,7 @@ func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
 		}
 	}
 
-	return &EngineResult{
+	return &TopologyChanges{
 		HardwareAdded:                  hardwareAdded,
 		ModifiedNetworkExtraProperties: modifiedNetworkExtraProperties,
 	}, nil

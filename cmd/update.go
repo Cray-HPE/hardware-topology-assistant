@@ -128,9 +128,21 @@ to quickly create a Cobra application.`,
 			},
 		}
 
-		_, err = topologyEngine.DetermineChanges()
-		if err != nil {
-			panic(err)
+		{
+			//
+			// Debug stuff
+			//
+			topologyChanges, err := topologyEngine.DetermineChanges()
+			if err != nil {
+				panic(err)
+			}
+
+			topologyChangesRaw, err := json.MarshalIndent(topologyChanges, "", "  ")
+			if err != nil {
+				panic(err)
+			}
+
+			ioutil.WriteFile("topology_changes.json", topologyChangesRaw, 0600)
 		}
 
 		//
