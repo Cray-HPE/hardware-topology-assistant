@@ -6,6 +6,7 @@ import (
 	"math"
 
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
+	"github.com/Cray-HPE/hms-xname/xnames"
 	"inet.af/netaddr"
 )
 
@@ -54,7 +55,7 @@ func FindNextAvailableIP(slsSubnet sls_common.IPV4Subnet) (netaddr.IP, error) {
 	return netaddr.IP{}, fmt.Errorf("subnet has no available IPs")
 }
 
-func AdvanceSubnet(ip netaddr.IP, subnetMaskOneBits uint8) (netaddr.IP, error) {
+func AdvanceIP(ip netaddr.IP, n uint32) (netaddr.IP, error) {
 	if ip.Is6() {
 		return netaddr.IP{}, fmt.Errorf("IPv6 is not supported")
 	}
@@ -62,16 +63,12 @@ func AdvanceSubnet(ip netaddr.IP, subnetMaskOneBits uint8) (netaddr.IP, error) {
 		return netaddr.IP{}, fmt.Errorf("empty IP address provided")
 	}
 
-	if subnetMaskOneBits < 16 || 30 < subnetMaskOneBits {
-		return netaddr.IP{}, fmt.Errorf("invalid subnet mask provided /%d", subnetMaskOneBits)
-	}
-
 	// This is kind of crude hack, but if it works it works.
 	ipOctets := ip.As4()
 	ipRaw := binary.BigEndian.Uint32(ipOctets[:])
 
-	// Advance the subnet
-	ipRaw += uint32(math.Pow(2, float64(32-subnetMaskOneBits)))
+	// Advance the IP by n
+	ipRaw += n
 
 	// Now put it back into an netaddr.IP
 	var updatedIPOctets [4]byte
@@ -80,18 +77,23 @@ func AdvanceSubnet(ip netaddr.IP, subnetMaskOneBits uint8) (netaddr.IP, error) {
 	return netaddr.IPFrom4(updatedIPOctets), nil
 }
 
-func SplitNetwork(network netaddr.IPPrefix, subnetMaskBits uint8) ([]netaddr.IPPrefix, error) {
-	var subnets []netaddr.IPPrefix
+func SplitNetwork(network netaddr.IPPrefix, subnetMaskOneBits uint8) ([]netaddr.IPPrefix, error) {
+	if subnetMaskOneBits < 16 || 30 < subnetMaskOneBits {
+		return nil, fmt.Errorf("invalid subnet mask provided /%d", subnetMaskOneBits)
+	}
 
 	subnetStartIP := network.Range().From()
 
 	// TODO add a counter to prevent this loop from going in forever!
+	var subnets []netaddr.IPPrefix
 	for {
-		subnets = append(subnets, netaddr.IPPrefixFrom(subnetStartIP, subnetMaskBits))
+		subnets = append(subnets, netaddr.IPPrefixFrom(subnetStartIP, subnetMaskOneBits))
+
+		advanceBy := uint32(math.Pow(2, float64(32-subnetMaskOneBits)))
 
 		// Now advance!
 		var err error
-		subnetStartIP, err = AdvanceSubnet(subnetStartIP, subnetMaskBits)
+		subnetStartIP, err = AdvanceIP(subnetStartIP, advanceBy)
 		if err != nil {
 			return nil, err
 		}
@@ -142,4 +144,43 @@ func FindNextAvailableSubnet(slsNetwork sls_common.NetworkExtraProperties) (neta
 	}
 
 	return netaddr.IPPrefix{}, fmt.Errorf("network space has been exhausted")
+}
+
+func AllocateCabinetSubnet(slsNetwork sls_common.NetworkExtraProperties, xname xnames.Cabinet, vlanOverride *int16) (sls_common.IPV4Subnet, error) {
+	cabinetSubnet, err := FindNextAvailableSubnet(slsNetwork)
+	if err != nil {
+		return sls_common.IPV4Subnet{}, fmt.Errorf("failed to allocate subnet for (%s) in CIDR (%s)", xname.String(), slsNetwork.CIDR)
+	}
+
+	// Verify this subnet is new
+	subnetName := fmt.Sprintf("%d", xname.Cabinet)
+	for _, otherSubnet := range slsNetwork.Subnets {
+		if otherSubnet.Name == subnetName {
+			return sls_common.IPV4Subnet{}, fmt.Errorf("subnet (%s) already exists", subnetName)
+		}
+	}
+
+	// Calculate VLAN if one was not provided
+	vlan := int16(-1)
+	if vlanOverride != nil {
+		vlan = *vlanOverride
+	} else {
+		// Look at other cabinets in the subnet and pick one.
+		// TODO THIS MIGHT FALL APART WITH LIQUID-COOLED CABINETS AS THOSE CAN BE USER SUPPLIED
+	}
+	// TODO make sure vlan is unique
+
+	// DHCP starts 10 into the subnet
+	dhcpStart, err := AdvanceIP(cabinetSubnet.Range().From(), 10)
+	if err != nil {
+		return sls_common.IPV4Subnet{}, fmt.Errorf("failed to determine DHCP start in CIDR (%s)", cabinetSubnet.String())
+	}
+
+	return sls_common.IPV4Subnet{
+		Name:      subnetName,
+		VlanID:    vlan,
+		Gateway:   cabinetSubnet.Range().From().Next().IPAddr().IP,
+		DHCPStart: dhcpStart.IPAddr().IP,
+		DHCPEnd:   cabinetSubnet.Range().To().Prior().IPAddr().IP,
+	}, nil
 }

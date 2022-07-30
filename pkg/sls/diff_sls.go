@@ -10,8 +10,8 @@ import (
 
 // Hardware present in A that is missing from B
 // Set subtract operation
-func HardwareSubtract(a, b sls_common.SLSState) ([]sls_common.GenericHardware, error) {
-	var missingHardware []sls_common.GenericHardware
+func HardwareSubtract(a, b sls_common.SLSState) ([]*sls_common.GenericHardware, error) {
+	var missingHardware []*sls_common.GenericHardware
 
 	// Build up a lookup map for the hardware in set B
 	bHardwareMap := map[string]sls_common.GenericHardware{}
@@ -30,7 +30,7 @@ func HardwareSubtract(a, b sls_common.SLSState) ([]sls_common.GenericHardware, e
 			continue
 		}
 
-		missingHardware = append(missingHardware, hardware)
+		missingHardware = append(missingHardware, &hardware)
 	}
 
 	// Sort the slice to make it look nice, and have a deterministic order
@@ -43,12 +43,12 @@ func HardwareSubtract(a, b sls_common.SLSState) ([]sls_common.GenericHardware, e
 
 type GenericHardwarePair struct {
 	Xname     string
-	HardwareA sls_common.GenericHardware
-	HardwareB sls_common.GenericHardware
+	HardwareA *sls_common.GenericHardware
+	HardwareB *sls_common.GenericHardware
 }
 
 // Identify hardware
-func HardwareUnion(a, b sls_common.SLSState) (identicalHardware, differingContents []GenericHardwarePair, err error) {
+func HardwareUnion(a, b sls_common.SLSState) (identicalHardware []*sls_common.GenericHardware, differingContents []GenericHardwarePair, err error) {
 	// Build up a lookup map for the hardware in set B
 	bHardwareMap := map[string]sls_common.GenericHardware{}
 	for _, hardware := range b.Hardware {
@@ -69,8 +69,8 @@ func HardwareUnion(a, b sls_common.SLSState) (identicalHardware, differingConten
 
 		hardwarePair := GenericHardwarePair{
 			Xname:     hardwareA.Xname,
-			HardwareA: hardwareA,
-			HardwareB: hardwareB,
+			HardwareA: &hardwareA,
+			HardwareB: &hardwareB,
 		}
 
 		// See if the hardware class between the 2 hardware objects is different
@@ -90,7 +90,7 @@ func HardwareUnion(a, b sls_common.SLSState) (identicalHardware, differingConten
 		}
 
 		// If we made it here, then these 2 hardware objects must be identical
-		identicalHardware = append(identicalHardware, hardwarePair)
+		identicalHardware = append(identicalHardware, &hardwareA)
 	}
 
 	// Sort the slices to make it look nice, and have a deterministic order

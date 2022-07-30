@@ -7,25 +7,25 @@ import (
 	"strings"
 
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
-	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
+	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
 	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
+	"github.hpe.com/sjostrand/topology-tool/pkg/ipam"
 	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 )
 
 type TopologyEngine struct {
-	Input     EngineInput
-	SLSClient *sls_client.SLSClient
+	Input EngineInput
+
+	CurrentSLSState sls_common.SLSState
 }
 
 type EngineInput struct {
 	Paddle                ccj.Paddle
 	CabinetLookup         configs.CabinetLookup
 	ApplicationNodeConfig csi.SLSGeneratorApplicationNodeConfig
-
-	CurrentSLSState sls_common.SLSState
 }
 
 func (te *TopologyEngine) Run(ctx context.Context) error {
@@ -40,21 +40,21 @@ func (te *TopologyEngine) Run(ctx context.Context) error {
 	//
 
 	// Identify missing hardware from either side
-	hardwareRemoved, err := sls.HardwareSubtract(te.Input.CurrentSLSState, expectedSLSState)
+	hardwareRemoved, err := sls.HardwareSubtract(te.CurrentSLSState, expectedSLSState)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	hardwareAdded, err := sls.HardwareSubtract(expectedSLSState, te.Input.CurrentSLSState)
+	hardwareAdded, err := sls.HardwareSubtract(expectedSLSState, te.CurrentSLSState)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// Identify hardware present in both states
 	// Does not take into account differences in Class/ExtraProperties, just by the primary key of xname
-	identicalHardware, hardwareWithDifferingValues, err := sls.HardwareUnion(te.Input.CurrentSLSState, expectedSLSState)
+	identicalHardware, hardwareWithDifferingValues, err := sls.HardwareUnion(te.CurrentSLSState, expectedSLSState)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	te.displayHardwareComparisonReport(hardwareRemoved, hardwareAdded, identicalHardware, hardwareWithDifferingValues)
@@ -79,13 +79,54 @@ func (te *TopologyEngine) Run(ctx context.Context) error {
 	// Check for new hardware additions that require changes to the network
 	//
 
+	// Create lookup maps for network extra properties for easier modified networks
+	modifiedNetworks := map[string]bool{}
+	networkExtraProperties := map[string]*sls_common.NetworkExtraProperties{}
+	for networkName, slsNetwork := range te.CurrentSLSState.Networks {
+		var ep sls_common.NetworkExtraProperties
+		if err := sls.DecodeNetworkExtraProperties(slsNetwork.ExtraPropertiesRaw, &ep); err != nil {
+			return fmt.Errorf("failed to decode extra properties for network (%s)", networkName)
+		}
+
+		networkExtraProperties[networkName] = &ep
+	}
+
 	// First look for any new cabinets, and allocation an subnet for them
 	for _, hardware := range hardwareAdded {
 		if hardware.TypeString == xnametypes.Cabinet {
 			// TODO In the case of added liquid-cooled cabinets the HMN_MTN or NMN_MTN networks may not exist.
 			// Such as the case of adding a liquid-cooled cabinet to a river only system.
 
-			// Allocation Cabinet Subnet
+			// Allocation of the Cabinet Subnets
+			for _, networkPrefix := range []string{"HMN", "NMN"} {
+				networkName, err := te.determineCabinetNetwork(networkPrefix, hardware.Class)
+				if err != nil {
+					return err
+				}
+
+				// Retrieve the network
+				networkExtraProperties, present := networkExtraProperties[networkName]
+				if !present {
+					return fmt.Errorf("unable to allocate cabinet subnet network does not exist (%s)", networkName)
+				}
+
+				// Find an available subnet
+				xnameRaw := xnames.FromString(hardware.Xname)
+				xname, ok := xnameRaw.(xnames.Cabinet)
+				if !ok {
+					return fmt.Errorf("unable to parse cabinet xname (%s)", hardware.Xname)
+				}
+
+				// TODO deal with Vlan later
+				subnet, err := ipam.AllocateCabinetSubnet(*networkExtraProperties, xname, nil)
+				if err != nil {
+					return fmt.Errorf("unable to allocate subnet for cabinet (%s) in network (%s)", hardware.Xname, networkName)
+				}
+
+				// Push in the newly created subnet into the SLS network
+				networkExtraProperties.Subnets = append(networkExtraProperties.Subnets, subnet)
+				modifiedNetworks[networkName] = true
+			}
 		}
 	}
 
@@ -207,7 +248,7 @@ func (te *TopologyEngine) buildExpectedHardwareState() (sls_common.SLSState, err
 	}, nil
 }
 
-func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardwareAdded []sls_common.GenericHardware, identicalHardware, hardwareWithDifferingValues []sls.GenericHardwarePair) {
+func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardwareAdded, identicalHardware []*sls_common.GenericHardware, hardwareWithDifferingValues []sls.GenericHardwarePair) {
 	fmt.Println("Identical hardware between current and expected states")
 	if len(identicalHardware) == 0 {
 		fmt.Println("  None")
@@ -250,4 +291,20 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 
 		fmt.Printf("  %s - %s\n", hardware.Xname, string(hardwareRaw))
 	}
+}
+
+func (te *TopologyEngine) determineCabinetNetwork(networkPrefix string, class sls_common.CabinetType) (string, error) {
+	var suffix string
+	switch class {
+	case sls_common.ClassRiver:
+		suffix = "_RVR"
+	case sls_common.ClassHill:
+		fallthrough
+	case sls_common.ClassMountain:
+		suffix = "_MTN"
+	default:
+		return "", fmt.Errorf("unknown cabinet class (%s)", class)
+	}
+
+	return networkPrefix + suffix, nil
 }
