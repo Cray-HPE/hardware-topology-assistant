@@ -127,6 +127,8 @@ func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
 					return nil, fmt.Errorf("unable to allocate subnet for cabinet (%s) in network (%s)", hardware.Xname, networkName)
 				}
 
+				fmt.Printf("Allocated subnet %s in network %s for %s\n", subnet.CIDR, networkName, hardware.Xname)
+
 				// Push in the newly created subnet into the SLS network
 				networkExtraProperties.Subnets = append(networkExtraProperties.Subnets, subnet)
 				modifiedNetworks[networkName] = true
@@ -160,6 +162,7 @@ func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
 		hmsType := hardware.TypeString
 		if hmsType == xnametypes.CDUMgmtSwitch || hmsType == xnametypes.MgmtHLSwitch || hmsType == xnametypes.MgmtSwitch {
 			// Allocation IP for Switch
+			fmt.Printf("Allocating IPs for %s\n", hardware.Xname)
 
 			// TODO if CSM 1.0 is going to be supported at some point with this tool, the CMN network needs to become optional
 			for _, networkName := range []string{"HMN", "NMN", "MTL", "CMN"} {
@@ -177,7 +180,7 @@ func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
 
 				// Parse the xname
 				xname := xnames.FromString(hardware.Xname)
-				if xname != nil {
+				if xname == nil {
 					return nil, fmt.Errorf("unable to parse switch xname (%s)", hardware.Xname)
 				}
 
@@ -194,7 +197,7 @@ func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
 					return nil, fmt.Errorf("switch (%s) has invalid or missing extra properties structure", hardware.Xname)
 				}
 
-				if len(aliases) != 0 {
+				if len(aliases) != 1 {
 					return nil, fmt.Errorf("switch (%s) has unexpected number of aliases (%d) expected 1", hardware.Xname, len(aliases))
 				}
 
@@ -203,6 +206,8 @@ func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
 				if err != nil {
 					return nil, fmt.Errorf("unable to allocate IP for switch (%s) in network (%s): %w", xname.String(), networkName, err)
 				}
+
+				fmt.Printf("Allocated IP %s in subnet network_hardware in network %s for switch %s (%s) \n", ipReservation.IPAddress.String(), networkName, hardware.Xname, aliases[0])
 
 				// Push in the network IP Reservation into the subnet
 				slsSubnet.IPReservations = append(slsSubnet.IPReservations, ipReservation)

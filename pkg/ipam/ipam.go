@@ -123,7 +123,7 @@ func FindNextAvailableSubnet(slsNetwork sls_common.NetworkExtraProperties) (neta
 		return netaddr.IPPrefix{}, err
 	}
 
-	fmt.Println("Network IP Address rnage", existingSubnetsSet.Ranges())
+	fmt.Println("Network IP Address range", existingSubnetsSet.Ranges())
 
 	network, err := netaddr.ParseIPPrefix(slsNetwork.CIDR)
 	if err != nil {
@@ -178,6 +178,7 @@ func AllocateCabinetSubnet(slsNetwork sls_common.NetworkExtraProperties, xname x
 
 	return sls_common.IPV4Subnet{
 		Name:      subnetName,
+		CIDR:      cabinetSubnet.IP().String(),
 		VlanID:    vlan,
 		Gateway:   cabinetSubnet.Range().From().Next().IPAddr().IP,
 		DHCPStart: dhcpStart.IPAddr().IP,
