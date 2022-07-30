@@ -244,7 +244,7 @@ to quickly create a Cobra application.`,
 		if len(topologyChanges.ModifiedNetworks) == 0 {
 			fmt.Println("No SLS network changes required")
 		} else {
-			fmt.Printf("Updating modified networks in SLS (count %s)\n", len(topologyChanges.ModifiedNetworks))
+			fmt.Printf("Updating modified networks in SLS (count %d)\n", len(topologyChanges.ModifiedNetworks))
 			for _, modifiedNetwork := range topologyChanges.ModifiedNetworks {
 				if slsClient != nil {
 					slsClient.PutNetwork(ctx, modifiedNetwork)

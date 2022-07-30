@@ -3,7 +3,6 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
@@ -55,7 +54,7 @@ type TopologyChanges struct {
 
 func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	// Build up the expected SLS hardware state from the provided CCJ
-	expectedSLSState, err := te.buildExpectedHardwareState()
+	expectedSLSState, err := ccj.BuildExpectedHardwareState(te.Input.Paddle, te.Input.CabinetLookup, te.Input.ApplicationNodeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expected SLS hardware state: %w", err)
 	}
@@ -286,113 +285,6 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 
 		SubnetsAdded:        subnetsAdded,
 		IPReservationsAdded: ipReservationsAdded,
-	}, nil
-}
-
-func (te *TopologyEngine) buildExpectedHardwareState() (sls_common.SLSState, error) {
-	paddle := te.Input.Paddle
-	cabinetLookup := te.Input.CabinetLookup
-	applicationNodeConfig := te.Input.ApplicationNodeConfig
-
-	// Iterate over the paddle file to build of SLS data
-	allHardware := map[string]sls_common.GenericHardware{}
-	for _, topologyNode := range paddle.Topology {
-		fmt.Println(topologyNode.Architecture, topologyNode.CommonName)
-
-		//
-		// Build the SLS hardware representation
-		//
-		hardware, err := ccj.BuildSLSHardware(topologyNode, paddle, cabinetLookup, applicationNodeConfig)
-		if err != nil {
-			panic(err)
-		}
-
-		// Ignore empty hardware
-		if hardware.Xname == "" {
-			continue
-		}
-
-		// Verify cabinet exists (ignore CDUs)
-		if strings.HasPrefix(hardware.Xname, "x") {
-			cabinetXname, err := csi.CabinetForXname(hardware.Xname)
-			if err != nil {
-				panic(err)
-			}
-
-			if !cabinetLookup.CabinetExists(cabinetXname) {
-				err := fmt.Errorf("unknown cabinet (%s)", cabinetXname)
-				panic(err)
-			}
-		}
-
-		// Verify new hardware
-		if _, present := allHardware[hardware.Xname]; present {
-			err := fmt.Errorf("found duplicate xname %v", hardware.Xname)
-			panic(err)
-		}
-
-		allHardware[hardware.Xname] = hardware
-
-		//
-		// Build up derived hardware
-		//
-		if hardware.TypeString == xnametypes.ChassisBMC {
-			allHardware[hardware.Xname] = sls_common.NewGenericHardware(hardware.Parent, hardware.Class, nil)
-		}
-
-		//
-		// Build the MgmtSwitchConnector for the hardware
-		//
-
-		mgmtSwtichConnector, err := ccj.BuildSLSMgmtSwitchConnector(hardware, topologyNode, paddle)
-		if err != nil {
-			panic(err)
-		}
-
-		// Ignore empty mgmtSwtichConnectors
-		if mgmtSwtichConnector.Xname == "" {
-			continue
-		}
-
-		if _, present := allHardware[mgmtSwtichConnector.Xname]; present {
-			err := fmt.Errorf("found duplicate xname %v", mgmtSwtichConnector.Xname)
-			panic(err)
-		}
-
-		allHardware[mgmtSwtichConnector.Xname] = mgmtSwtichConnector
-	}
-
-	// Generate Cabinet Objects
-	for cabinetKind, cabinets := range cabinetLookup {
-		for _, cabinet := range cabinets {
-			class, err := cabinetKind.Class()
-			if err != nil {
-				panic(err)
-			}
-
-			extraProperties := sls_common.ComptypeCabinet{
-				Networks: map[string]map[string]sls_common.CabinetNetworks{}, // TODO this should be outright removed. MEDS and KEA no longer look here
-			}
-
-			if cabinetKind.IsModel() {
-				extraProperties.Model = string(cabinetKind)
-			}
-
-			hardware := sls_common.NewGenericHardware(cabinet, class, extraProperties)
-
-			// Verify new hardware
-			if _, present := allHardware[hardware.Xname]; present {
-				err := fmt.Errorf("found duplicate xname %v", hardware.Xname)
-				panic(err)
-			}
-
-			allHardware[hardware.Xname] = hardware
-		}
-	}
-
-	// Build up and the SLS state
-	return sls_common.SLSState{
-		Hardware: allHardware,
 	}, nil
 }
 

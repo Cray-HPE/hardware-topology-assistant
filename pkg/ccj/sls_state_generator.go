@@ -35,6 +35,109 @@ func extractNumber(numberRaw string) (int, error) {
 	return number, nil
 }
 
+func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.SLSState, error) {
+	// Iterate over the paddle file to build of SLS data
+	allHardware := map[string]sls_common.GenericHardware{}
+	for _, topologyNode := range paddle.Topology {
+		fmt.Println(topologyNode.Architecture, topologyNode.CommonName)
+
+		//
+		// Build the SLS hardware representation
+		//
+		hardware, err := BuildSLSHardware(topologyNode, paddle, cabinetLookup, applicationNodeConfig)
+		if err != nil {
+			panic(err)
+		}
+
+		// Ignore empty hardware
+		if hardware.Xname == "" {
+			continue
+		}
+
+		// Verify cabinet exists (ignore CDUs)
+		if strings.HasPrefix(hardware.Xname, "x") {
+			cabinetXname, err := csi.CabinetForXname(hardware.Xname)
+			if err != nil {
+				panic(err)
+			}
+
+			if !cabinetLookup.CabinetExists(cabinetXname) {
+				err := fmt.Errorf("unknown cabinet (%s)", cabinetXname)
+				panic(err)
+			}
+		}
+
+		// Verify new hardware
+		if _, present := allHardware[hardware.Xname]; present {
+			err := fmt.Errorf("found duplicate xname %v", hardware.Xname)
+			panic(err)
+		}
+
+		allHardware[hardware.Xname] = hardware
+
+		//
+		// Build up derived hardware
+		//
+		if hardware.TypeString == xnametypes.ChassisBMC {
+			allHardware[hardware.Xname] = sls_common.NewGenericHardware(hardware.Parent, hardware.Class, nil)
+		}
+
+		//
+		// Build the MgmtSwitchConnector for the hardware
+		//
+
+		mgmtSwtichConnector, err := BuildSLSMgmtSwitchConnector(hardware, topologyNode, paddle)
+		if err != nil {
+			panic(err)
+		}
+
+		// Ignore empty mgmtSwtichConnectors
+		if mgmtSwtichConnector.Xname == "" {
+			continue
+		}
+
+		if _, present := allHardware[mgmtSwtichConnector.Xname]; present {
+			err := fmt.Errorf("found duplicate xname %v", mgmtSwtichConnector.Xname)
+			panic(err)
+		}
+
+		allHardware[mgmtSwtichConnector.Xname] = mgmtSwtichConnector
+	}
+
+	// Generate Cabinet Objects
+	for cabinetKind, cabinets := range cabinetLookup {
+		for _, cabinet := range cabinets {
+			class, err := cabinetKind.Class()
+			if err != nil {
+				panic(err)
+			}
+
+			extraProperties := sls_common.ComptypeCabinet{
+				Networks: map[string]map[string]sls_common.CabinetNetworks{}, // TODO this should be outright removed. MEDS and KEA no longer look here
+			}
+
+			if cabinetKind.IsModel() {
+				extraProperties.Model = string(cabinetKind)
+			}
+
+			hardware := sls_common.NewGenericHardware(cabinet, class, extraProperties)
+
+			// Verify new hardware
+			if _, present := allHardware[hardware.Xname]; present {
+				err := fmt.Errorf("found duplicate xname %v", hardware.Xname)
+				panic(err)
+			}
+
+			allHardware[hardware.Xname] = hardware
+		}
+	}
+
+	// Build up and the SLS state
+	return sls_common.SLSState{
+		Hardware: allHardware,
+	}, nil
+}
+
 func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.GenericHardware, error) {
 	// TODO use CANU files for lookup
 	switch topologyNode.Architecture {
