@@ -292,7 +292,7 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfi
 		extraProperties.Aliases = applicationNodeConfig.Aliases[xname.String()]
 
 		if len(extraProperties.Aliases) == 0 {
-			return sls_common.GenericHardware{}, fmt.Errorf("application node has no defined aliases")
+			return sls_common.GenericHardware{}, fmt.Errorf("application node (%s) has no defined aliases", xname.String())
 		}
 	}
 

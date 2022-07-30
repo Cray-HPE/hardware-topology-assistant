@@ -781,6 +781,329 @@
       "Type": "comptype_cab_pdu_controller",
       "Class": "River",
       "TypeString": "CabinetPDUController"
+    },
+    "x3001": {
+      "Parent": "s0",
+      "Xname": "x3001",
+      "Type": "comptype_cabinet",
+      "Class": "River",
+      "TypeString": "Cabinet",
+      "ExtraProperties": {
+        "Networks": {}
+      }
+    },
+    "x3001c0h33s1": {
+      "Parent": "x3001c0h33",
+      "Xname": "x3001c0h33s1",
+      "Type": "comptype_hl_switch",
+      "Class": "River",
+      "TypeString": "MgmtHLSwitch",
+      "ExtraProperties": {
+        "Brand": "Aruba",
+        "Model": "8325_JL625A",
+        "Aliases": [
+          "sw-leaf-012"
+        ]
+      }
+    },
+    "x3001c0h34s1": {
+      "Parent": "x3001c0h34",
+      "Xname": "x3001c0h34s1",
+      "Type": "comptype_hl_switch",
+      "Class": "River",
+      "TypeString": "MgmtHLSwitch",
+      "ExtraProperties": {
+        "Brand": "Aruba",
+        "Model": "8325_JL625A",
+        "Aliases": [
+          "sw-leaf-011"
+        ]
+      }
+    },
+    "x3001c0h35s1": {
+      "Parent": "x3001c0h35",
+      "Xname": "x3001c0h35s1",
+      "Type": "comptype_hl_switch",
+      "Class": "River",
+      "TypeString": "MgmtHLSwitch",
+      "ExtraProperties": {
+        "Brand": "Aruba",
+        "Model": "8325_JL625A",
+        "Aliases": [
+          "sw-leaf-014"
+        ]
+      }
+    },
+    "x3001c0h36s1": {
+      "Parent": "x3001c0h36",
+      "Xname": "x3001c0h36s1",
+      "Type": "comptype_hl_switch",
+      "Class": "River",
+      "TypeString": "MgmtHLSwitch",
+      "ExtraProperties": {
+        "Brand": "Aruba",
+        "Model": "8325_JL625A",
+        "Aliases": [
+          "sw-leaf-013"
+        ]
+      }
+    },
+    "x3001c0r40b0": {
+      "Parent": "x3001c0r40",
+      "Xname": "x3001c0r40b0",
+      "Type": "comptype_rtr_bmc",
+      "Class": "River",
+      "TypeString": "RouterBMC",
+      "ExtraProperties": {
+        "Username": "vault://hms-creds/x3001c0r40b0",
+        "Password": "vault://hms-creds/x3001c0r40b0"
+      }
+    },
+    "x3001c0s16b0n0": {
+      "Parent": "x3001c0s16b0",
+      "Xname": "x3001c0s16b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Application",
+        "SubRole": "UAN",
+        "Aliases": [
+          "uan03"
+        ]
+      }
+    },
+    "x3001c0s1b1n0": {
+      "Parent": "x3001c0s1b1",
+      "Xname": "x3001c0s1b1n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 5,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000005"
+        ]
+      }
+    },
+    "x3001c0s1b2n0": {
+      "Parent": "x3001c0s1b2",
+      "Xname": "x3001c0s1b2n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 6,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000006"
+        ]
+      }
+    },
+    "x3001c0s1b3n0": {
+      "Parent": "x3001c0s1b3",
+      "Xname": "x3001c0s1b3n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 7,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000007"
+        ]
+      }
+    },
+    "x3001c0s1b4n0": {
+      "Parent": "x3001c0s1b4",
+      "Xname": "x3001c0s1b4n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 8,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000008"
+        ]
+      }
+    },
+    "x3001c0s1b999": {
+      "Parent": "x3001c0s1",
+      "Xname": "x3001c0s1b999",
+      "Type": "comptype_ncard",
+      "Class": "River",
+      "TypeString": "NodeBMC"
+    },
+    "x3001c0w31": {
+      "Parent": "x3001c0",
+      "Xname": "x3001c0w31",
+      "Type": "comptype_mgmt_switch",
+      "Class": "River",
+      "TypeString": "MgmtSwitch",
+      "ExtraProperties": {
+        "Brand": "Aruba",
+        "Model": "6300M_JL762A",
+        "SNMPAuthPassword": "vault://hms-creds/x3001c0w31",
+        "SNMPAuthProtocol": "MD5",
+        "SNMPPrivPassword": "vault://hms-creds/x3001c0w31",
+        "SNMPPrivProtocol": "DES",
+        "SNMPUsername": "testuser",
+        "Aliases": [
+          "sw-leaf-bmc-003"
+        ]
+      }
+    },
+    "x3001c0w31j26": {
+      "Parent": "x3001c0w31",
+      "Xname": "x3001c0w31j26",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3001c0s1b1"
+        ],
+        "VendorName": "1/1/26"
+      }
+    },
+    "x3001c0w31j27": {
+      "Parent": "x3001c0w31",
+      "Xname": "x3001c0w31j27",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3001c0s1b2"
+        ],
+        "VendorName": "1/1/27"
+      }
+    },
+    "x3001c0w31j28": {
+      "Parent": "x3001c0w31",
+      "Xname": "x3001c0w31j28",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3001c0s1b3"
+        ],
+        "VendorName": "1/1/28"
+      }
+    },
+    "x3001c0w31j29": {
+      "Parent": "x3001c0w31",
+      "Xname": "x3001c0w31j29",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3001c0s1b4"
+        ],
+        "VendorName": "1/1/29"
+      }
+    },
+    "x3001c0w31j30": {
+      "Parent": "x3001c0w31",
+      "Xname": "x3001c0w31j30",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3001c0s1b999"
+        ],
+        "VendorName": "1/1/30"
+      }
+    },
+    "x3001c0w31j48": {
+      "Parent": "x3001c0w31",
+      "Xname": "x3001c0w31j48",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3001m1"
+        ],
+        "VendorName": "1/1/48"
+      }
+    },
+    "x3001c0w32": {
+      "Parent": "x3001c0",
+      "Xname": "x3001c0w32",
+      "Type": "comptype_mgmt_switch",
+      "Class": "River",
+      "TypeString": "MgmtSwitch",
+      "ExtraProperties": {
+        "Brand": "Aruba",
+        "Model": "6300M_JL762A",
+        "SNMPAuthPassword": "vault://hms-creds/x3001c0w32",
+        "SNMPAuthProtocol": "MD5",
+        "SNMPPrivPassword": "vault://hms-creds/x3001c0w32",
+        "SNMPPrivProtocol": "DES",
+        "SNMPUsername": "testuser",
+        "Aliases": [
+          "sw-leaf-bmc-004"
+        ]
+      }
+    },
+    "x3001c0w32j41": {
+      "Parent": "x3001c0w32",
+      "Xname": "x3001c0w32j41",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3001c0s16b0"
+        ],
+        "VendorName": "1/1/41"
+      }
+    },
+    "x3001c0w32j47": {
+      "Parent": "x3001c0w32",
+      "Xname": "x3001c0w32j47",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3001c0r40b0"
+        ],
+        "VendorName": "1/1/47"
+      }
+    },
+    "x3001c0w32j48": {
+      "Parent": "x3001c0w32",
+      "Xname": "x3001c0w32j48",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3001m0"
+        ],
+        "VendorName": "1/1/48"
+      }
+    },
+    "x3001m0": {
+      "Parent": "x3001",
+      "Xname": "x3001m0",
+      "Type": "comptype_cab_pdu_controller",
+      "Class": "River",
+      "TypeString": "CabinetPDUController"
+    },
+    "x3001m1": {
+      "Parent": "x3001",
+      "Xname": "x3001m1",
+      "Type": "comptype_cab_pdu_controller",
+      "Class": "River",
+      "TypeString": "CabinetPDUController"
     }
   },
   "Networks": null

@@ -4,16 +4,22 @@ go 1.17
 
 require (
 	github.com/Cray-HPE/cray-site-init v1.24.0
+	github.com/Cray-HPE/hms-base v1.15.0
 	github.com/Cray-HPE/hms-sls v1.23.0
 	github.com/Cray-HPE/hms-xname v1.1.0
+	github.com/hashicorp/go-retryablehttp v0.7.1
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/namsral/flag v1.7.4-pre
 	gopkg.in/yaml.v2 v2.4.0
+	inet.af/netaddr v0.0.0-20220617031823-097006376321
 )
 
 require (
+	github.com/Cray-HPE/hms-base/v2 v2.0.1 // indirect
 	github.com/Cray-HPE/hms-shcd-parser v1.8.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gocarina/gocsv v0.0.0-20200925213129-04be9ee2e1a2 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
@@ -38,7 +44,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v3 v3.0.0 // indirect
-	inet.af/netaddr v0.0.0-20220617031823-097006376321 // indirect
 )
 
 replace github.com/Cray-HPE/hms-sls => ../Github/hms-sls

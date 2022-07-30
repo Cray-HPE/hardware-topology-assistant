@@ -11,5 +11,4 @@ prefix_hsm_subroles:
 aliases:
   x3000c0s15b0n0: ["uan01"]
   x3000c0s16b0n0: ["uan02"]
-  x3000c0s25b0n0: ["uan03"]
-  x3000c0s23b0n0: ["slurm01"]
+  x3001c0s16b0n0: ["uan03"]
