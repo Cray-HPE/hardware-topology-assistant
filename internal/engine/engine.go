@@ -61,7 +61,7 @@ func (te *TopologyEngine) Run(ctx context.Context) error {
 
 	//
 	// GUARD RAILS - If hardware is removed of has differing values then
-	// DO NOT PROCEED.
+	// DO NOT PROCEED, as those are currently out of scope use cases.
 	//
 	// This is put in place as the first use for this tool is to add river cabinets to the system.
 	//
@@ -82,6 +82,9 @@ func (te *TopologyEngine) Run(ctx context.Context) error {
 	// First look for any new cabinets, and allocation an subnet for them
 	for _, hardware := range hardwareAdded {
 		if hardware.TypeString == xnametypes.Cabinet {
+			// TODO In the case of added liquid-cooled cabinets the HMN_MTN or NMN_MTN networks may not exist.
+			// Such as the case of adding a liquid-cooled cabinet to a river only system.
+
 			// Allocation Cabinet Subnet
 		}
 	}
