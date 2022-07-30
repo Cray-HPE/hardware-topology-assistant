@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -33,7 +32,7 @@ type EngineResult struct {
 	ModifiedNetworkExtraProperties map[string]*sls_common.NetworkExtraProperties
 }
 
-func (te *TopologyEngine) Run(ctx context.Context) (*EngineResult, error) {
+func (te *TopologyEngine) DetermineChanges() (*EngineResult, error) {
 	// Build up the expected SLS hardware state from the provided CCJ
 	expectedSLSState, err := te.buildExpectedHardwareState()
 	if err != nil {
