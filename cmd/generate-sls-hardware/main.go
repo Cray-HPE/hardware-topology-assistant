@@ -11,7 +11,7 @@ import (
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
-	topology_tool "github.hpe.com/sjostrand/topology-tool/pkg/topology-tool"
+	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 	"gopkg.in/yaml.v2"
 )
 
@@ -54,7 +54,7 @@ func main() {
 		panic(err)
 	}
 
-	var cabinetLookup topology_tool.CabinetLookup
+	var cabinetLookup configs.CabinetLookup
 	if err := yaml.Unmarshal(cabinetLookupRaw, &cabinetLookup); err != nil {
 		panic(err)
 	}

@@ -82,6 +82,8 @@ func HardwareUnion(a, b sls_common.SLSState) (identicalHardware, differingConten
 		}
 
 		// Next check to see if the extra properties between the two hardware objects
+		// TODO maybe we should ignore fields like IPv4 fields during the comparison
+		// as that is something that we don't know when generating from the CCJ
 		if !reflect.DeepEqual(hardwareA.ExtraPropertiesRaw, hardwareB.ExtraPropertiesRaw) {
 			differingContents = append(differingContents, hardwarePair)
 			continue

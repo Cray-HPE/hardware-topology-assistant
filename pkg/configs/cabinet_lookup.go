@@ -1,4 +1,4 @@
-package topology_tool
+package configs
 
 import (
 	"fmt"

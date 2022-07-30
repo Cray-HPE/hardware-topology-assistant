@@ -10,7 +10,7 @@ import (
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
-	topology_tool "github.hpe.com/sjostrand/topology-tool/pkg/topology-tool"
+	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 )
 
 // Paddle Vendor to SLS Brand
@@ -35,7 +35,7 @@ func extractNumber(numberRaw string) (int, error) {
 	return number, nil
 }
 
-func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup topology_tool.CabinetLookup, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.GenericHardware, error) {
+func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.GenericHardware, error) {
 	// TODO use CANU files for lookup
 	switch topologyNode.Architecture {
 	case "cec":
@@ -513,7 +513,7 @@ func BuildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 	}), nil
 }
 
-func buildSLSChassisBMC(location Location, cl topology_tool.CabinetLookup) (sls_common.GenericHardware, error) {
+func buildSLSChassisBMC(location Location, cl configs.CabinetLookup) (sls_common.GenericHardware, error) {
 	cabinetOrdinal, err := extractNumber(location.Rack)
 	if err != nil {
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
