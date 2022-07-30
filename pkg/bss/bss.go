@@ -6,7 +6,6 @@ import (
 	"net"
 	"strings"
 
-	"github.com/Cray-HPE/cray-site-init/pkg/sls"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/mitchellh/mapstructure"
@@ -36,15 +35,15 @@ func getIPAMForNCN(managementNCN sls_common.GenericHardware,
 		}
 
 		// Map this network to a usable structure.
-		var networkExtraProperties sls.NetworkExtraProperties
+		var networkExtraProperties sls_common.NetworkExtraProperties
 		err := mapstructure.Decode(targetSLSNetwork.ExtraPropertiesRaw, &networkExtraProperties)
 		if err != nil {
 			log.Fatalf("Failed to decode raw network extra properties to correct structure: %s", err)
 		}
 
 		// The target SLS network is determined, now we need the right reservation.
-		var targetSubnet *sls.IPV4Subnet
-		var targetReservation *sls.IPReservation
+		var targetSubnet *sls_common.IPV4Subnet
+		var targetReservation *sls_common.IPReservation
 
 		_, targetNet, err := net.ParseCIDR(networkExtraProperties.CIDR)
 		if err != nil {
@@ -98,7 +97,7 @@ func getIPAMForNCN(managementNCN sls_common.GenericHardware,
 
 		// Now we can build an IPAM object.
 		thisIPAMNetwork := IPAMNetwork{
-			Gateway:      targetSubnet.Gateway,
+			Gateway:      targetSubnet.Gateway.String(),
 			CIDR:         fmt.Sprintf("%s/%d", targetReservation.IPAddress, maskBits),
 			ParentDevice: "bond0", // FIXME: Remove bond0 hardcode.
 			VlanID:       targetSubnet.VlanID,
@@ -126,7 +125,7 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 			if strings.HasPrefix(strings.ToLower(network.Name), neededNetwork) ||
 				(neededNetwork == "nmn" && strings.ToLower(network.Name) == "mtl") {
 				// Map this network to a usable structure.
-				var networkExtraProperties sls.NetworkExtraProperties
+				var networkExtraProperties sls_common.NetworkExtraProperties
 				err := mapstructure.Decode(network.ExtraPropertiesRaw, &networkExtraProperties)
 				if err != nil {
 					log.Fatalf("Failed to decode raw network extra properties to correct structure: %s", err)
@@ -184,8 +183,8 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 }
 
 // buildBSSHostRecords will build a BSS HostRecords
-func buildBSSHostRecords(networkEPs map[string]*sls.NetworkExtraProperties, networkName, subnetName, reservationName string, aliases []string) HostRecord {
-	subnet, err := networkEPs[networkName].LookupSubnet(subnetName)
+func buildBSSHostRecords(networkEPs map[string]*sls_common.NetworkExtraProperties, networkName, subnetName, reservationName string, aliases []string) HostRecord {
+	subnet, _, err := networkEPs[networkName].LookupSubnet(subnetName)
 	if err != nil {
 		log.Fatalf("Unable to find %s in the %s network", subnetName, networkName)
 	}
@@ -195,7 +194,7 @@ func buildBSSHostRecords(networkEPs map[string]*sls.NetworkExtraProperties, netw
 	}
 
 	return HostRecord{
-		IP:      ipReservation.IPAddress,
+		IP:      ipReservation.IPAddress.String(),
 		Aliases: aliases,
 	}
 }
@@ -204,10 +203,10 @@ func buildBSSHostRecords(networkEPs map[string]*sls.NetworkExtraProperties, netw
 func getBSSGlobalHostRecords(managementNCNs []sls_common.GenericHardware, networks sls_common.NetworkArray) HostRecords {
 
 	// Collase all of the Network ExtraProperties into single map for lookups
-	networkEPs := map[string]*sls.NetworkExtraProperties{}
+	networkEPs := map[string]*sls_common.NetworkExtraProperties{}
 	for _, network := range networks {
 		// Map this network to a usable structure.
-		var networkExtraProperties sls.NetworkExtraProperties
+		var networkExtraProperties sls_common.NetworkExtraProperties
 		err := mapstructure.Decode(network.ExtraPropertiesRaw, &networkExtraProperties)
 		if err != nil {
 			log.Fatalf("Failed to decode raw network extra properties to correct structure: %s", err)
@@ -296,7 +295,7 @@ func getBSSGlobalHostRecords(managementNCNs []sls_common.GenericHardware, networ
 	)
 
 	// Add entries for switches
-	hmnNetSubnet, err := networkEPs["HMN"].LookupSubnet("network_hardware")
+	hmnNetSubnet, _, err := networkEPs["HMN"].LookupSubnet("network_hardware")
 	if err != nil {
 		log.Fatal("Unable to find network_hardware in the HMN network")
 	}
@@ -304,7 +303,7 @@ func getBSSGlobalHostRecords(managementNCNs []sls_common.GenericHardware, networ
 	for _, ipReservation := range hmnNetSubnet.IPReservations {
 		if strings.HasPrefix(ipReservation.Name, "sw-") {
 			globalHostRecords = append(globalHostRecords, HostRecord{
-				IP:      ipReservation.IPAddress,
+				IP:      ipReservation.IPAddress.String(),
 				Aliases: []string{ipReservation.Name},
 			})
 		}
