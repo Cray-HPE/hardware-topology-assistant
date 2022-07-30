@@ -184,3 +184,27 @@ func AllocateCabinetSubnet(slsNetwork sls_common.NetworkExtraProperties, xname x
 		DHCPEnd:   cabinetSubnet.Range().To().Prior().IPAddr().IP,
 	}, nil
 }
+
+func AllocateSwitchIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias string) (sls_common.IPReservation, error) {
+	ip, err := FindNextAvailableIP(slsSubnet)
+	if err != nil {
+		return sls_common.IPReservation{}, fmt.Errorf("failed to allocate ip for switch (%s) in subnet (%s)", xname.String(), slsSubnet.CIDR)
+	}
+
+	// Verify this switch is unique within the subnet
+	for _, ipReservation := range slsSubnet.IPReservations {
+		if ipReservation.Name == alias {
+			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with name (%v) already exits", alias)
+		}
+
+		if ipReservation.Comment == xname.String() {
+			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with xname (%v) already exits", xname.String())
+		}
+	}
+
+	return sls_common.IPReservation{
+		Comment:   xname.String(),
+		IPAddress: ip.IPAddr().IP,
+		Name:      alias,
+	}, nil
+}

@@ -200,7 +200,7 @@ func main() {
 		log.Fatalf("Failed to decode raw network extra properties to correct structure: %s", err)
 	}
 
-	bootstrapDHCPSubnet, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
+	bootstrapDHCPSubnet, _, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
 	if err != nil {
 		panic(err)
 	}
