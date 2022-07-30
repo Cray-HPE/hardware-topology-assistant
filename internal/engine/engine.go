@@ -28,8 +28,8 @@ type EngineInput struct {
 }
 
 type TopologyChanges struct {
-	HardwareAdded                  []sls_common.GenericHardware
-	ModifiedNetworkExtraProperties map[string]*sls_common.NetworkExtraProperties
+	HardwareAdded    []sls_common.GenericHardware
+	ModifiedNetworks map[string]sls_common.Network
 }
 
 func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
@@ -227,16 +227,24 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	}
 
 	// Filter NetworkExtraProperties to include only the modified networks
-	modifiedNetworkExtraProperties := map[string]*sls_common.NetworkExtraProperties{}
+	modifiedNetworksSet := map[string]sls_common.Network{}
 	for networkName, networkExtraProperties := range networkExtraProperties {
-		if modifiedNetworks[networkName] {
-			modifiedNetworkExtraProperties[networkName] = networkExtraProperties
+		if !modifiedNetworks[networkName] {
+			continue
 		}
+
+		// Merge extra properties with the top level network with SLS
+		slsNetwork := te.Input.CurrentSLSState.Networks[networkName]
+		slsNetwork.ExtraPropertiesRaw = networkExtraProperties
+
+		// TODO update vlan range.
+
+		modifiedNetworksSet[networkName] = slsNetwork
 	}
 
 	return &TopologyChanges{
-		HardwareAdded:                  hardwareAdded,
-		ModifiedNetworkExtraProperties: modifiedNetworkExtraProperties,
+		HardwareAdded:    hardwareAdded,
+		ModifiedNetworks: modifiedNetworksSet,
 	}, nil
 }
 

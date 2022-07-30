@@ -5,12 +5,19 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
+	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.hpe.com/sjostrand/topology-tool/internal/engine"
@@ -33,8 +40,20 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Initialize the global viper
 		v := viper.GetViper()
-
 		v.BindPFlags(cmd.Flags())
+
+		// Setup Context
+		ctx := setupContext()
+
+		// Setup HTTP client
+		httpClient := retryablehttp.NewClient()
+
+		// Setup SLS client
+		currentSLSStateLocation := v.GetString("sls-current-state")
+		var slsClient *sls_client.SLSClient
+		if strings.HasPrefix(currentSLSStateLocation, "http") {
+			slsClient = sls_client.NewSLSClient(currentSLSStateLocation, httpClient.StandardClient(), "")
+		}
 
 		//
 		// Parse input files
@@ -102,16 +121,24 @@ to quickly create a Cobra application.`,
 		//
 		// Retrieve current state from the system
 		//
-		currentSLSStateFile := v.GetString("sls-current-state")
-		fmt.Printf("Using current SLS state at %s\n", currentSLSStateFile)
-		currentSLSStateRaw, err := ioutil.ReadFile(currentSLSStateFile)
-		if err != nil {
-			panic(err) // TODO
-		}
+		fmt.Printf("Using current SLS state at %s\n", currentSLSStateLocation)
 
 		var currentSLSState sls_common.SLSState
-		if err := json.Unmarshal(currentSLSStateRaw, &currentSLSState); err != nil {
-			panic(err) // TODO
+		if strings.HasPrefix(currentSLSStateLocation, "http") {
+			currentSLSState, err = slsClient.GetDumpState(ctx)
+			if err != nil {
+				// TODO give a better error message
+				panic(err)
+			}
+		} else {
+			currentSLSStateRaw, err := ioutil.ReadFile(currentSLSStateLocation)
+			if err != nil {
+				panic(err) // TODO
+			}
+
+			if err := json.Unmarshal(currentSLSStateRaw, &currentSLSState); err != nil {
+				panic(err) // TODO
+			}
 		}
 
 		// TODO HACK reading from file
@@ -128,15 +155,15 @@ to quickly create a Cobra application.`,
 			},
 		}
 
+		topologyChanges, err := topologyEngine.DetermineChanges()
+		if err != nil {
+			panic(err)
+		}
+
 		{
 			//
 			// Debug stuff
 			//
-			topologyChanges, err := topologyEngine.DetermineChanges()
-			if err != nil {
-				panic(err)
-			}
-
 			topologyChangesRaw, err := json.MarshalIndent(topologyChanges, "", "  ")
 			if err != nil {
 				panic(err)
@@ -152,6 +179,22 @@ to quickly create a Cobra application.`,
 		//
 		// Perform changes to SLS/HSM/BSS on the system to reflect the updated state.
 		//
+
+		// Add new hardware
+		fmt.Println("Adding new hardware to SLS")
+		for _, hardware := range topologyChanges.HardwareAdded {
+			if slsClient != nil {
+				slsClient.PutHardware(ctx, hardware)
+			}
+		}
+
+		// Update modified networks
+		fmt.Println("Updating modified networks in SLS")
+		for _, modifiedNetwork := range topologyChanges.ModifiedNetworks {
+			if slsClient != nil {
+				slsClient.PutNetwork(ctx, modifiedNetwork)
+			}
+		}
 	},
 }
 
@@ -171,9 +214,25 @@ func init() {
 	// TODO hack should point to a SLS service
 	// TODO Would be cool if this could work with both HTTP(s) with a SLS service, and
 	// locally with a SLS state file
-	updateCmd.Flags().String("sls-current-state", "sls_state_hela.json", "Location of the current SLS state")
+	updateCmd.Flags().String("sls-current-state", "http://localhost:8376", "Location of the current SLS state")
 
 	updateCmd.Flags().String("cabinet-lookup", "cabinet_lookup.yaml", "YAML containing extra cabinet metadata")
 	updateCmd.Flags().String("application-node-config", "application_node_config.yaml", "YAML to control Application node identification during the SLS State generation")
+}
 
+func setupContext() context.Context {
+	var cancel context.CancelFunc
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+
+	go func() {
+		<-c
+
+		// Cancel the context to cancel any in progress HTTP requests.
+		cancel()
+	}()
+
+	return ctx
 }
