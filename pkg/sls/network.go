@@ -17,3 +17,11 @@ func DecodeNetworkExtraProperties(extraPropertiesRaw interface{}, extraPropertie
 
 	return decoder.Decode(extraPropertiesRaw)
 }
+
+func Networks(state sls_common.SLSState) (networks sls_common.NetworkArray) {
+	for _, network := range state.Networks {
+		networks = append(networks, network)
+	}
+
+	return networks
+}

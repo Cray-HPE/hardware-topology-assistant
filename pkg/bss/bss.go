@@ -9,12 +9,17 @@ import (
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/mitchellh/mapstructure"
+	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 )
+
+//
+// TODO look into making this package return an error
+//
 
 // This following code was taken from CSI
 // https://github.com/Cray-HPE/cray-site-init/blob/main/cmd/upgrade-metadata.go#L294-L422
 
-func getIPAMForNCN(managementNCN sls_common.GenericHardware,
+func GetIPAMForNCN(managementNCN sls_common.GenericHardware,
 	networks sls_common.NetworkArray, extraSLSNetworks ...string) (ipamNetworks CloudInitIPAM) {
 	ipamNetworks = make(CloudInitIPAM)
 
@@ -36,7 +41,7 @@ func getIPAMForNCN(managementNCN sls_common.GenericHardware,
 
 		// Map this network to a usable structure.
 		var networkExtraProperties sls_common.NetworkExtraProperties
-		err := mapstructure.Decode(targetSLSNetwork.ExtraPropertiesRaw, &networkExtraProperties)
+		err := sls.DecodeNetworkExtraProperties(targetSLSNetwork.ExtraPropertiesRaw, &networkExtraProperties)
 		if err != nil {
 			log.Fatalf("Failed to decode raw network extra properties to correct structure: %s", err)
 		}
@@ -182,8 +187,8 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 	return
 }
 
-// buildBSSHostRecords will build a BSS HostRecords
-func buildBSSHostRecords(networkEPs map[string]*sls_common.NetworkExtraProperties, networkName, subnetName, reservationName string, aliases []string) HostRecord {
+// buildBSSHostRecord will build a BSS HostRecord
+func BuildBSSHostRecord(networkEPs map[string]*sls_common.NetworkExtraProperties, networkName, subnetName, reservationName string, aliases []string) HostRecord {
 	subnet, _, err := networkEPs[networkName].LookupSubnet(subnetName)
 	if err != nil {
 		log.Fatalf("Unable to find %s in the %s network", subnetName, networkName)
@@ -200,14 +205,14 @@ func buildBSSHostRecords(networkEPs map[string]*sls_common.NetworkExtraPropertie
 }
 
 // getBSSGlobalHostRecords is the BSS analog of the pit.MakeBasecampHostRecords that works with SLS data
-func getBSSGlobalHostRecords(managementNCNs []sls_common.GenericHardware, networks sls_common.NetworkArray) HostRecords {
+func GetBSSGlobalHostRecords(managementNCNs []sls_common.GenericHardware, networks sls_common.NetworkArray) HostRecords {
 
 	// Collase all of the Network ExtraProperties into single map for lookups
 	networkEPs := map[string]*sls_common.NetworkExtraProperties{}
 	for _, network := range networks {
 		// Map this network to a usable structure.
 		var networkExtraProperties sls_common.NetworkExtraProperties
-		err := mapstructure.Decode(network.ExtraPropertiesRaw, &networkExtraProperties)
+		err := sls.DecodeNetworkExtraProperties(network.ExtraPropertiesRaw, &networkExtraProperties)
 		if err != nil {
 			log.Fatalf("Failed to decode raw network extra properties to correct structure: %s", err)
 		}
@@ -245,7 +250,7 @@ func getBSSGlobalHostRecords(managementNCNs []sls_common.GenericHardware, networ
 		if len(extraNets) == 0 {
 			log.Fatalf("SLS must have either CAN or CHN defined")
 		}
-		ipamNetworks = getIPAMForNCN(managementNCN, networks, extraNets...)
+		ipamNetworks = GetIPAMForNCN(managementNCN, networks, extraNets...)
 
 		for network, ipam := range ipamNetworks {
 			// Get the IP of the NCN for this network.
@@ -269,29 +274,29 @@ func getBSSGlobalHostRecords(managementNCNs []sls_common.GenericHardware, networ
 		// Next add the NCN BMC host record
 		bmcXname := xnametypes.GetHMSCompParent(managementNCN.Xname)
 		globalHostRecords = append(globalHostRecords,
-			buildBSSHostRecords(networkEPs, "HMN", "bootstrap_dhcp", bmcXname, []string{fmt.Sprintf("%s-mgmt", ncnAlias)}),
+			BuildBSSHostRecord(networkEPs, "HMN", "bootstrap_dhcp", bmcXname, []string{fmt.Sprintf("%s-mgmt", ncnAlias)}),
 		)
 	}
 
 	// Add kubeapi-vip
 	globalHostRecords = append(globalHostRecords,
-		buildBSSHostRecords(networkEPs, "NMN", "bootstrap_dhcp", "kubeapi-vip", []string{"kubeapi-vip", "kubeapi-vip.nmn"}),
+		BuildBSSHostRecord(networkEPs, "NMN", "bootstrap_dhcp", "kubeapi-vip", []string{"kubeapi-vip", "kubeapi-vip.nmn"}),
 	)
 
 	// Add rgw-vip
 	globalHostRecords = append(globalHostRecords,
-		buildBSSHostRecords(networkEPs, "NMN", "bootstrap_dhcp", "rgw-vip", []string{"rgw-vip", "rgw-vip.nmn"}),
+		BuildBSSHostRecord(networkEPs, "NMN", "bootstrap_dhcp", "rgw-vip", []string{"rgw-vip", "rgw-vip.nmn"}),
 	)
 
 	// Using the original InstallNCN as the host for pit.nmn
 	// HACK, I'm assuming ncn-m001
 	globalHostRecords = append(globalHostRecords,
-		buildBSSHostRecords(networkEPs, "NMN", "bootstrap_dhcp", "ncn-m001", []string{"pit", "pit.nmn"}),
+		BuildBSSHostRecord(networkEPs, "NMN", "bootstrap_dhcp", "ncn-m001", []string{"pit", "pit.nmn"}),
 	)
 
 	// Add in packages.local and registry.local pointing toward the API Gateway
 	globalHostRecords = append(globalHostRecords,
-		buildBSSHostRecords(networkEPs, "NMNLB", "nmn_metallb_address_pool", "istio-ingressgateway", []string{"packages.local", "registry.local"}),
+		BuildBSSHostRecord(networkEPs, "NMNLB", "nmn_metallb_address_pool", "istio-ingressgateway", []string{"packages.local", "registry.local"}),
 	)
 
 	// Add entries for switches

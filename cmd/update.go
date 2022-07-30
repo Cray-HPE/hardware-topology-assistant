@@ -17,7 +17,6 @@ import (
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
-	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -25,6 +24,7 @@ import (
 	"github.hpe.com/sjostrand/topology-tool/pkg/bss"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
 	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
+	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 	"gopkg.in/yaml.v2"
 )
 
@@ -184,6 +184,14 @@ to quickly create a Cobra application.`,
 			panic(err)
 		}
 
+		// Merge Topology Changes into the current SLS state
+		for name, network := range topologyChanges.ModifiedNetworks {
+			currentSLSState.Networks[name] = network
+		}
+		for _, hardware := range topologyChanges.HardwareAdded {
+			currentSLSState.Hardware[hardware.Xname] = hardware
+		}
+
 		{
 			//
 			// Debug stuff
@@ -199,38 +207,58 @@ to quickly create a Cobra application.`,
 		//
 		// Determine changes requires to downstream services from SLS. Like HSM and BSS
 		//
+		_ = bssClient
 
 		// TODO retrieve global BSS boot parameters
 		// TODO verify new host records are unique (IP and alias)
 
-		bssHostRecordsToAdd := []bss.HostRecord{}
-		for _, addedReservation := range topologyChanges.IPReservationsAdded {
-			// Check for IP added reservations due to hardware
-			switch xnametypes.GetHMSType(addedReservation.ChangedByXname) {
-			case xnametypes.CDUMgmtSwitch:
-				fallthrough
-			case xnametypes.MgmtHLSwitch:
-				fallthrough
-			case xnametypes.MgmtSwitch:
-				bssHostRecordsToAdd = append(bssHostRecordsToAdd, bss.HostRecord{
-					IP:      addedReservation.IPReservation.IPAddress.String(),
-					Aliases: addedReservation.IPReservation.Aliases,
-				})
-			case xnametypes.Node:
-				// Management Node are ignored for now, as that process is a lot harder
-				// Application node changes don't need to live in BSS. Only static IPs for management NCNs.
-			}
-		}
+		// bssHostRecordsToAdd := []bss.HostRecord{}
+		// for _, addedReservation := range topologyChanges.IPReservationsAdded {
+		// 	// Check for IP added reservations due to hardware
+		// 	switch xnametypes.GetHMSType(addedReservation.ChangedByXname) {
+		// 	case xnametypes.CDUMgmtSwitch:
+		// 		fallthrough
+		// 	case xnametypes.MgmtHLSwitch:
+		// 		fallthrough
+		// 	case xnametypes.MgmtSwitch:
+		// 		bssHostRecordsToAdd = append(bssHostRecordsToAdd, bss.HostRecord{
+		// 			IP:      addedReservation.IPReservation.IPAddress.String(),
+		// 			Aliases: addedReservation.IPReservation.Aliases,
+		// 		})
+		// 	case xnametypes.Node:
+		// 		// Management Node are ignored for now, as that process is a lot harder
+		// 		// Application node changes don't need to live in BSS. Only static IPs for management NCNs.
+		// 	}
+		// }
 
 		// TODO add cabinet routes
 
-		if len(bssHostRecordsToAdd) == 0 {
-			fmt.Println("No host records to add to BSS Global boot parameters")
-		} else {
-			fmt.Println("Updating BSS Global boot parameters")
-			fmt.Printf("  Added host records: %d\n", len(bssHostRecordsToAdd))
-			// TODO PUT to BSS
-			_ = bssClient
+		// if len(bssHostRecordsToAdd) == 0 {
+		// 	fmt.Println("No host records to add to BSS Global boot parameters")
+		// } else {
+		// 	fmt.Println("Updating BSS Global boot parameters")
+		// 	fmt.Printf("  Added host records: %d\n", len(bssHostRecordsToAdd))
+		// 	// TODO PUT to BSS
+		// 	_ = bssClient
+		// }
+
+		// Recalculate the systems host recorded
+		managementNCNs, err := sls.FindManagementNCNs(currentSLSState)
+		if err != nil {
+			panic(err)
+		}
+		globalHostRecords := bss.GetBSSGlobalHostRecords(managementNCNs, sls.Networks(currentSLSState))
+
+		{
+			//
+			// Debug stuff
+			//
+			globalHostRecordsRaw, err := json.MarshalIndent(globalHostRecords, "", "  ")
+			if err != nil {
+				panic(err)
+			}
+
+			ioutil.WriteFile("bss_global_host_records.json", globalHostRecordsRaw, 0600)
 		}
 
 		//

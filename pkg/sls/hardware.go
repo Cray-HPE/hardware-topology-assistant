@@ -69,3 +69,30 @@ func DecodeHardwareExtraProperties(hardware sls_common.GenericHardware) (result 
 
 	return result, err
 }
+
+func FindManagementNCNs(slsState sls_common.SLSState) ([]sls_common.GenericHardware, error) {
+	var managementNCNs []sls_common.GenericHardware
+
+	for _, hardware := range slsState.Hardware {
+		if xnametypes.GetHMSType(hardware.Xname) != xnametypes.Node {
+			continue
+		}
+
+		var nodeEP sls_common.ComptypeNode
+		if ep, ok := hardware.ExtraPropertiesRaw.(sls_common.ComptypeNode); ok {
+			// If we are there, then the extra properties where created at runtime
+			nodeEP = ep
+		} else {
+			// If we are there, then the extra properties came from JSON
+			if err := mapstructure.Decode(hardware.ExtraPropertiesRaw, &nodeEP); err != nil {
+				return nil, err
+			}
+		}
+
+		if nodeEP.Role == "Management" {
+			managementNCNs = append(managementNCNs, hardware)
+		}
+	}
+
+	return managementNCNs, nil
+}
