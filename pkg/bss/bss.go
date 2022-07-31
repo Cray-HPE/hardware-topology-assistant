@@ -120,11 +120,6 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 	// Here's an example:
 	routeFiles := make(map[string][]string)
 
-	// Sort the networks so the ordering of things is deterministic
-	sort.SliceStable(networks, func(i, j int) bool {
-		return networks[i].Name < networks[j].Name
-	})
-
 	for _, neededNetwork := range []string{"cmn", "hmn", "nmn"} {
 		ipamNetwork := ipamNetworks[neededNetwork]
 
@@ -182,8 +177,17 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 		}
 	}
 
+	// Sort the network names so the output is deterministic
+	var networkNames []string
+	for networkName := range routeFiles {
+		networkNames = append(networkNames, networkName)
+	}
+	sort.Strings(networkNames)
+
 	// We now have all the write files, let's make objects for them.
-	for networkName, routeFile := range routeFiles {
+	for _, networkName := range networkNames {
+		routeFile := routeFiles[networkName]
+
 		writeFile := WriteFile{
 			Content:     strings.Join(routeFile, "\n"),
 			Owner:       "root:root",
