@@ -8,6 +8,7 @@ import (
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
+	"github.com/mitchellh/mapstructure"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
 	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ipam"
@@ -50,6 +51,11 @@ type TopologyChanges struct {
 	// The following fields are for book keeping to trigger other events
 	SubnetsAdded        []SubnetChange
 	IPReservationsAdded []IPReservationChange
+
+	// TODO Add in HSM EthernetEthernetInterface information
+	// This is needed if the state IP address range for a network needs to be expanded
+	// so we can check to see if the IP has been allocated.
+	// These issues need to be recorded, as the subnets DHCP range needs to be expanded.
 }
 
 func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
@@ -186,9 +192,6 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 		}
 	}
 
-	// Allocate UAN IPs on the CAN/CHN/CMN(?)
-	// TODO
-
 	// Allocation Switch IPs
 	// Note: The hardware being added is sorted by xname so this should be deterministic
 	for i, hardware := range hardwareAdded {
@@ -235,7 +238,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 				}
 
 				// Allocate the IP!
-				ipReservation, err := ipam.AllocateSwitchIP(slsSubnet, xname, aliases[0])
+				ipReservation, err := ipam.AllocateIP(slsSubnet, xname, aliases[0])
 				if err != nil {
 					return nil, fmt.Errorf("unable to allocate IP for switch (%s) in network (%s): %w", xname.String(), networkName, err)
 				}
@@ -260,6 +263,62 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 				}
 			}
 
+		}
+	}
+
+	// Allocate UAN IPs on the CAN or CHN
+	// UH-OH the CAN/CHN range tightly packs the Static and DHCP IP address ranges right next to each other.
+	// So if we need to allocate an UAN IP on the CHN, then the Static IP address range needs to be expanded.
+	// Since this in on the CAN/CHN no nodes will be using these IPs for booting over DVS (either NMN or HSM)
+	// This will make adjusting the DHCP range nicer.
+	for _, hardware := range hardwareAdded {
+		if hardware.TypeString != xnametypes.Node {
+			continue
+		}
+
+		var extraProperties sls_common.ComptypeNode
+		if err := mapstructure.Decode(hardware.ExtraPropertiesRaw, &extraProperties); err != nil {
+			return nil, fmt.Errorf("unable to decode extra properties for (%s)", hardware.Xname)
+		}
+
+		if extraProperties.Role == "Application" && extraProperties.SubRole == "UAN" {
+			if len(extraProperties.Aliases) == 0 {
+				return nil, fmt.Errorf("no aliases defined for (%s)", hardware.Xname)
+			}
+
+			for _, networkName := range []string{"CAN", "CHN"} {
+				fmt.Printf("Allocating IP for UAN %s on the %s network\n", hardware.Xname, networkName)
+
+				// Only allocate an IP for the UAN if the network exists
+				networkExtraProperties, present := networkExtraProperties[networkName]
+				if !present {
+					continue
+				}
+
+				// Retrieve the subnet
+				slsSubnet, slsSubnetIndex, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
+				if !present {
+					return nil, fmt.Errorf("unable to find subnet in (%s) network: %w", networkName, err)
+				}
+
+				// Parse the xname
+				xname := xnames.FromString(hardware.Xname)
+				if xname == nil {
+					return nil, fmt.Errorf("unable to parse UAN xname (%s)", hardware.Xname)
+				}
+
+				ipReservation, err := ipam.AllocateIP(slsSubnet, xname, extraProperties.Aliases[0])
+				if err != nil {
+					return nil, fmt.Errorf("unable to allocate IP for UAN (%s) in network (%s): %w", xname.String(), networkName, err)
+				}
+
+				fmt.Printf("Allocated IP %s for UAN %s on the %s network\n", ipReservation.IPAddress, hardware.Xname, networkName)
+
+				// Push in the network IP Reservation into the subnet
+				slsSubnet.IPReservations = append(slsSubnet.IPReservations, ipReservation)
+				networkExtraProperties.Subnets[slsSubnetIndex] = slsSubnet
+				modifiedNetworks[networkName] = true
+			}
 		}
 	}
 

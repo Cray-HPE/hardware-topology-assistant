@@ -186,7 +186,7 @@ func AllocateCabinetSubnet(slsNetwork sls_common.NetworkExtraProperties, xname x
 	}, nil
 }
 
-func AllocateSwitchIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias string) (sls_common.IPReservation, error) {
+func AllocateIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias string) (sls_common.IPReservation, error) {
 	ip, err := FindNextAvailableIP(slsSubnet)
 	if err != nil {
 		return sls_common.IPReservation{}, fmt.Errorf("failed to allocate ip for switch (%s) in subnet (%s)", xname.String(), slsSubnet.CIDR)
@@ -201,6 +201,22 @@ func AllocateSwitchIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias
 		if ipReservation.Comment == xname.String() {
 			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with xname (%v) already exits", xname.String())
 		}
+	}
+
+	// Verify IP is within the static IP range
+	fmt.Println("DHCP Start", slsSubnet.DHCPStart)
+	if slsSubnet.DHCPStart != nil {
+		fmt.Println("Enforcing static IP address range")
+		dhcpStart, ok := netaddr.FromStdIP(slsSubnet.DHCPStart)
+		if !ok {
+			return sls_common.IPReservation{}, fmt.Errorf("failed to convert DHCP Start IP address to netaddr struct")
+		}
+
+		if !ip.Less(dhcpStart) {
+			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with xname (%v) and IP %s is outside the static IP address range - starting DHCP IP is %s", xname.String(), ip.String(), slsSubnet.DHCPStart.String())
+		}
+	} else {
+		fmt.Println("No DHCP range")
 	}
 
 	return sls_common.IPReservation{
