@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sort"
 	"strings"
 
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
@@ -119,6 +120,11 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 	// Here's an example:
 	routeFiles := make(map[string][]string)
 
+	// Sort the networks so the ordering of things is deterministic
+	sort.SliceStable(networks, func(i, j int) bool {
+		return networks[i].Name < networks[j].Name
+	})
+
 	for _, neededNetwork := range []string{"cmn", "hmn", "nmn"} {
 		ipamNetwork := ipamNetworks[neededNetwork]
 
@@ -131,7 +137,7 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 				(neededNetwork == "nmn" && strings.ToLower(network.Name) == "mtl") {
 				// Map this network to a usable structure.
 				var networkExtraProperties sls_common.NetworkExtraProperties
-				err := mapstructure.Decode(network.ExtraPropertiesRaw, &networkExtraProperties)
+				err := sls.DecodeNetworkExtraProperties(network.ExtraPropertiesRaw, &networkExtraProperties)
 				if err != nil {
 					log.Fatalf("Failed to decode raw network extra properties to correct structure: %s", err)
 				}
@@ -167,6 +173,9 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 						thisRouteFile = append(thisRouteFile, route)
 					}
 				}
+
+				// Sort the routes so the order of them is deterministic
+				sort.Strings(thisRouteFile)
 
 				routeFiles[neededNetwork] = thisRouteFile
 			}
@@ -313,6 +322,11 @@ func GetBSSGlobalHostRecords(managementNCNs []sls_common.GenericHardware, networ
 			})
 		}
 	}
+
+	// Sort the records so the order of the host records is deterministic
+	sort.SliceStable(globalHostRecords, func(i, j int) bool {
+		return globalHostRecords[i].IP < globalHostRecords[j].IP
+	})
 
 	return globalHostRecords
 }

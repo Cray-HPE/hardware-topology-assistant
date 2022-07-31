@@ -9,15 +9,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
 	"strings"
 	"syscall"
 
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
+	"github.com/Cray-HPE/hms-bss/pkg/bssTypes"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.hpe.com/sjostrand/topology-tool/internal/engine"
@@ -163,9 +167,28 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		// var bssGlobalBootparameters bssTypes.BootParams
+		// Retrieve BSS data
+		managementNCNs, err := sls.FindManagementNCNs(currentSLSState)
+		if err != nil {
+			panic(err)
+		}
 
-		// TODO HACK reading from file
+		fmt.Println("Retrieving Global boot parameters from BSS")
+		bssGlobalBootParameters, err := bssClient.GetBSSBootparametersByName("Global")
+		if err != nil {
+			panic(err)
+		}
+
+		managementNCNBootParams := map[string]*bssTypes.BootParams{}
+		for _, managementNCN := range managementNCNs {
+			fmt.Printf("Retrieving boot parameters for %s from BSS\n", managementNCN.Xname)
+			bootParams, err := bssClient.GetBSSBootparametersByName(managementNCN.Xname)
+			if err != nil {
+				panic(err)
+			}
+
+			managementNCNBootParams[managementNCN.Xname] = bootParams
+		}
 
 		//
 		// Determine topology changes
@@ -207,58 +230,110 @@ to quickly create a Cobra application.`,
 		//
 		// Determine changes requires to downstream services from SLS. Like HSM and BSS
 		//
-		_ = bssClient
 
-		// TODO retrieve global BSS boot parameters
-		// TODO verify new host records are unique (IP and alias)
-
-		// bssHostRecordsToAdd := []bss.HostRecord{}
-		// for _, addedReservation := range topologyChanges.IPReservationsAdded {
-		// 	// Check for IP added reservations due to hardware
-		// 	switch xnametypes.GetHMSType(addedReservation.ChangedByXname) {
-		// 	case xnametypes.CDUMgmtSwitch:
-		// 		fallthrough
-		// 	case xnametypes.MgmtHLSwitch:
-		// 		fallthrough
-		// 	case xnametypes.MgmtSwitch:
-		// 		bssHostRecordsToAdd = append(bssHostRecordsToAdd, bss.HostRecord{
-		// 			IP:      addedReservation.IPReservation.IPAddress.String(),
-		// 			Aliases: addedReservation.IPReservation.Aliases,
-		// 		})
-		// 	case xnametypes.Node:
-		// 		// Management Node are ignored for now, as that process is a lot harder
-		// 		// Application node changes don't need to live in BSS. Only static IPs for management NCNs.
-		// 	}
-		// }
-
-		// TODO add cabinet routes
-
-		// if len(bssHostRecordsToAdd) == 0 {
-		// 	fmt.Println("No host records to add to BSS Global boot parameters")
-		// } else {
-		// 	fmt.Println("Updating BSS Global boot parameters")
-		// 	fmt.Printf("  Added host records: %d\n", len(bssHostRecordsToAdd))
-		// 	// TODO PUT to BSS
-		// 	_ = bssClient
-		// }
+		// TODO For right now lets just always push the host records, unless the reflect.DeepEqual
+		// says they are equal.
+		// Because the logic to compare the expected BSS host records with the current ones
+		// is kind of hard. If anything is different just recalculate it.
+		// This should be harmless just the order of records will shift around.
 
 		// Recalculate the systems host recorded
-		managementNCNs, err := sls.FindManagementNCNs(currentSLSState)
-		if err != nil {
+		modifiedGlobalBootParameters := false
+		expectedGlobalHostRecords := bss.GetBSSGlobalHostRecords(managementNCNs, sls.Networks(currentSLSState))
+
+		var currentGlobalHostRecords bss.HostRecords
+		if err := mapstructure.Decode(bssGlobalBootParameters.CloudInit.MetaData["host_records"], &currentGlobalHostRecords); err != nil {
 			panic(err)
 		}
-		globalHostRecords := bss.GetBSSGlobalHostRecords(managementNCNs, sls.Networks(currentSLSState))
+
+		if !reflect.DeepEqual(currentGlobalHostRecords, expectedGlobalHostRecords) {
+			fmt.Println("Host records in BSS Global boot parameters are out of date")
+			bssGlobalBootParameters.CloudInit.MetaData["host_records"] = expectedGlobalHostRecords
+			modifiedGlobalBootParameters = true
+		}
+
+		// Recalculate cabinet routes
+		// TODO NOTE this is the list of the managementNCNs before the topology of SLS changed.
+		modifiedManagementNCNBootParams := map[string]bool{}
+
+		for _, managementNCN := range managementNCNs {
+
+			// The following was stolen from CSI
+			extraNets := []string{}
+			var foundCAN = false
+			var foundCHN = false
+
+			for _, net := range sls.Networks(currentSLSState) {
+				if strings.ToLower(net.Name) == "can" {
+					extraNets = append(extraNets, "can")
+					foundCAN = true
+				}
+				if strings.ToLower(net.Name) == "chn" {
+					foundCHN = true
+				}
+			}
+			if !foundCAN && !foundCHN {
+				err = fmt.Errorf("no CAN or CHN network defined in SLS")
+				panic(err)
+			}
+
+			// IPAM
+			ipamNetworks := bss.GetIPAMForNCN(managementNCN, sls.Networks(currentSLSState), extraNets...)
+			expectedWriteFiles := bss.GetWriteFiles(sls.Networks(currentSLSState), ipamNetworks)
+
+			var currentWriteFiles []bss.WriteFile
+			if err := mapstructure.Decode(managementNCNBootParams[managementNCN.Xname].CloudInit.UserData["write_files"], &currentWriteFiles); err != nil {
+				panic(err)
+			}
+
+			// TODO For right now lets just always push the writefiles, unless the reflect.DeepEqual
+			// says they are equal.
+			// This should be harmless, the cabinet routes may be in a different order. This is due to cabinet routes do not overlap with each other.
+			if !reflect.DeepEqual(expectedWriteFiles, currentWriteFiles) {
+				fmt.Printf("Cabinet routes for %s in BSS Global boot parameters are out of date\n", managementNCN.Xname)
+				managementNCNBootParams[managementNCN.Xname].CloudInit.UserData["write_files"] = expectedWriteFiles
+				modifiedManagementNCNBootParams[managementNCN.Xname] = true
+
+				{
+					// Expected Hardware json
+					expected, err := json.Marshal(expectedWriteFiles)
+					if err != nil {
+						panic(err)
+					}
+					fmt.Printf("  - Expected: %s\n", string(expected))
+
+					// Actual Hardware json
+					current, err := json.Marshal(currentWriteFiles)
+					if err != nil {
+						panic(err)
+					}
+					fmt.Printf("  - Actual:   %s\n", string(current))
+				}
+			}
+
+		}
 
 		{
 			//
 			// Debug stuff
 			//
-			globalHostRecordsRaw, err := json.MarshalIndent(globalHostRecords, "", "  ")
+			fmt.Printf("%T - %T\n", expectedGlobalHostRecords, currentGlobalHostRecords)
+			fmt.Printf("%d - %d\n", len(expectedGlobalHostRecords), len(currentGlobalHostRecords))
+
+			expectedGlobalHostRecordsRaw, err := json.MarshalIndent(expectedGlobalHostRecords, "", "  ")
 			if err != nil {
 				panic(err)
 			}
 
-			ioutil.WriteFile("bss_global_host_records.json", globalHostRecordsRaw, 0600)
+			ioutil.WriteFile("bss_global_host_records_expected.json", expectedGlobalHostRecordsRaw, 0600)
+
+			currentGlobalHostRecordsRaw, err := json.MarshalIndent(currentGlobalHostRecords, "", "  ")
+			if err != nil {
+				panic(err)
+			}
+
+			ioutil.WriteFile("bss_global_host_records_current.json", currentGlobalHostRecordsRaw, 0600)
+
 		}
 
 		//
@@ -284,8 +359,37 @@ to quickly create a Cobra application.`,
 			fmt.Printf("Updating modified networks in SLS (count %d)\n", len(topologyChanges.ModifiedNetworks))
 			for _, modifiedNetwork := range topologyChanges.ModifiedNetworks {
 				if slsClient != nil {
-					slsClient.PutNetwork(ctx, modifiedNetwork)
+					err := slsClient.PutNetwork(ctx, modifiedNetwork)
+					if err != nil {
+						panic(err)
+					}
 				}
+			}
+		}
+
+		// Update BSS Global Bootparams
+		if !modifiedGlobalBootParameters {
+			fmt.Println("No BSS Global boot parameters changes required")
+		} else {
+			fmt.Println("Updating BSS Global boot parameters")
+			_, err := bssClient.UploadEntryToBSS(*bssGlobalBootParameters, http.MethodPut)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		// Update per NCN BSS Boot parameters
+		for _, managementNCN := range managementNCNs {
+			xname := managementNCN.Xname
+
+			if !modifiedManagementNCNBootParams[xname] {
+				fmt.Printf("No changes to BSS boot parameters for %s\n", xname)
+				continue
+			}
+			fmt.Printf("Updating BSS boot parameters for %s\n", xname)
+			_, err := bssClient.UploadEntryToBSS(*managementNCNBootParams[xname], http.MethodPut)
+			if err != nil {
+				panic(err)
 			}
 		}
 	},

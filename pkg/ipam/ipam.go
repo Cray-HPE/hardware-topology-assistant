@@ -178,7 +178,7 @@ func AllocateCabinetSubnet(slsNetwork sls_common.NetworkExtraProperties, xname x
 
 	return sls_common.IPV4Subnet{
 		Name:      subnetName,
-		CIDR:      cabinetSubnet.IP().String(),
+		CIDR:      cabinetSubnet.String(),
 		VlanID:    vlan,
 		Gateway:   cabinetSubnet.Range().From().Next().IPAddr().IP,
 		DHCPStart: dhcpStart.IPAddr().IP,
