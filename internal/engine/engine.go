@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
@@ -271,6 +272,11 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	// So if we need to allocate an UAN IP on the CHN, then the Static IP address range needs to be expanded.
 	// Since this in on the CAN/CHN no nodes will be using these IPs for booting over DVS (either NMN or HSM)
 	// This will make adjusting the DHCP range nicer.
+	type uanInfo struct {
+		xname string
+		alias string
+	}
+	var uans []uanInfo
 	for _, hardware := range hardwareAdded {
 		if hardware.TypeString != xnametypes.Node {
 			continue
@@ -286,40 +292,103 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 				return nil, fmt.Errorf("no aliases defined for (%s)", hardware.Xname)
 			}
 
-			for _, networkName := range []string{"CAN", "CHN"} {
-				fmt.Printf("Allocating IP for UAN %s on the %s network\n", hardware.Xname, networkName)
+			uans = append(uans, uanInfo{
+				xname: hardware.Xname,
+				alias: extraProperties.Aliases[0],
+			})
+		}
+	}
 
-				// Only allocate an IP for the UAN if the network exists
-				networkExtraProperties, present := networkExtraProperties[networkName]
-				if !present {
-					continue
+	// Sort the UANs to add them increasing order to be deterministic
+	sort.SliceStable(uans, func(i, j int) bool {
+		return uans[i].alias < uans[j].alias
+	})
+
+	if len(uans) != 0 {
+		// Check to see if the Static IP address range in the CAN/CHN networks needs to be expanded
+		// to accommodate the new UANs.
+		for _, networkName := range []string{"CAN", "CHN"} {
+			// Only allocate an IP for the UAN if the network exists
+			networkExtraProperties, present := networkExtraProperties[networkName]
+			if !present {
+				continue
+			}
+			fmt.Printf("Checking to see if the static IP address range for the bootstrap_dhcp subnet in %s has enough room.\n", networkName)
+
+			// Retrieve the subnet
+			slsSubnet, slsSubnetIndex, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
+			if !present {
+				return nil, fmt.Errorf("unable to find subnet in (%s) network: %w", networkName, err)
+			}
+
+			freeIPCount, err := ipam.FreeIPsInStaticRange(slsSubnet)
+			if err != nil {
+				return nil, fmt.Errorf("unable to determine the number of free IPs in the Static IP range in bootstrap_dhcp subnet in (%s) network: %w", networkName, err)
+			}
+
+			var expandStaticRangeBy uint32
+			if freeIPCount < uint32(len(uans)) {
+				expandStaticRangeBy = uint32(len(uans)) - freeIPCount
+				fmt.Printf("The bootstrap_dhcp subnet in %s network has %d IP addresses available, will be expanded by %d hosts.\n", networkName, freeIPCount, expandStaticRangeBy)
+
+				// Okay, lets see if we can expand the subnet by the number of UANs being added to the system
+				if err := ipam.ExpandSubnetStaticRange(&slsSubnet, uint32(len(uans))); err != nil {
+					return nil, fmt.Errorf("unable to expand the static IP address range in the bootstrap_dhcp subnet in (%s) network: %w", networkName, err)
 				}
+				fmt.Printf("The bootstrap_dhcp subnet in %s network has been expanded by %d IP addresses,\n", networkName, expandStaticRangeBy)
 
-				// Retrieve the subnet
-				slsSubnet, slsSubnetIndex, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
-				if !present {
-					return nil, fmt.Errorf("unable to find subnet in (%s) network: %w", networkName, err)
-				}
-
-				// Parse the xname
-				xname := xnames.FromString(hardware.Xname)
-				if xname == nil {
-					return nil, fmt.Errorf("unable to parse UAN xname (%s)", hardware.Xname)
-				}
-
-				ipReservation, err := ipam.AllocateIP(slsSubnet, xname, extraProperties.Aliases[0])
-				if err != nil {
-					return nil, fmt.Errorf("unable to allocate IP for UAN (%s) in network (%s): %w", xname.String(), networkName, err)
-				}
-
-				fmt.Printf("Allocated IP %s for UAN %s on the %s network\n", ipReservation.IPAddress, hardware.Xname, networkName)
-
-				// Push in the network IP Reservation into the subnet
-				slsSubnet.IPReservations = append(slsSubnet.IPReservations, ipReservation)
+				// Update the subnet with the new DHCP range
 				networkExtraProperties.Subnets[slsSubnetIndex] = slsSubnet
 				modifiedNetworks[networkName] = true
+			} else {
+				fmt.Printf("The bootstrap_dhcp subnet in %s network has %d IP addresses available.\n", networkName, freeIPCount)
 			}
+
 		}
+	}
+
+	// Allocate IP addresses
+	for _, uan := range uans {
+		for _, networkName := range []string{"CAN", "CHN"} {
+			fmt.Printf("Allocating IP for UAN %s on the %s network\n", uan.xname, networkName)
+
+			// Only allocate an IP for the UAN if the network exists
+			networkExtraProperties, present := networkExtraProperties[networkName]
+			if !present {
+				continue
+			}
+
+			// Retrieve the subnet
+			slsSubnet, slsSubnetIndex, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
+			if !present {
+				return nil, fmt.Errorf("unable to find subnet in (%s) network: %w", networkName, err)
+			}
+
+			// Parse the xname
+			xname := xnames.FromString(uan.xname)
+			if xname == nil {
+				return nil, fmt.Errorf("unable to parse UAN xname (%s)", uan.xname)
+			}
+
+			ipReservation, err := ipam.AllocateIP(slsSubnet, xname, uan.alias)
+			if err != nil {
+				return nil, fmt.Errorf("unable to allocate IP for UAN (%s) in network (%s): %w", xname.String(), networkName, err)
+			}
+			ipReservationsAdded = append(ipReservationsAdded, IPReservationChange{
+				NetworkName:    networkName,
+				SubnetName:     "bootstrap_dhcp",
+				IPReservation:  ipReservation,
+				ChangedByXname: uan.xname,
+			})
+
+			fmt.Printf("Allocated IP %s for UAN %s on the %s network\n", ipReservation.IPAddress, uan.xname, networkName)
+
+			// Push in the network IP Reservation into the subnet
+			slsSubnet.IPReservations = append(slsSubnet.IPReservations, ipReservation)
+			networkExtraProperties.Subnets[slsSubnetIndex] = slsSubnet
+			modifiedNetworks[networkName] = true
+		}
+
 	}
 
 	// Filter NetworkExtraProperties to include only the modified networks

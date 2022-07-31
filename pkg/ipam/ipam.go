@@ -203,6 +203,10 @@ func AllocateIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias strin
 		}
 	}
 
+	// TODO Move this outside this function? So this function just gives back IP within the subnet, and then have outside logic
+	// Verify that the IP is actually valid ie within the DHCP range, and if not in the DHCP range expand it and verify nothing is
+	// using the IP address.
+
 	// Verify IP is within the static IP range
 	fmt.Println("DHCP Start", slsSubnet.DHCPStart)
 	if slsSubnet.DHCPStart != nil {
@@ -224,4 +228,41 @@ func AllocateIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias strin
 		IPAddress: ip.IPAddr().IP,
 		Name:      alias,
 	}, nil
+}
+
+func FreeIPsInStaticRange(slsSubnet sls_common.IPV4Subnet) (uint32, error) {
+	// TODO add the functionality for this
+	// Probably need to steal some of the logic for allocate IP. Need to share the logic between the two
+	return 0, nil
+}
+
+func ExpandSubnetStaticRange(slsSubnet *sls_common.IPV4Subnet, count uint32) error {
+	if slsSubnet.DHCPStart == nil || slsSubnet.DHCPEnd == nil {
+		return fmt.Errorf("subnet does not have DHCP range")
+	}
+
+	dhcpStart, ok := netaddr.FromStdIP(slsSubnet.DHCPStart)
+	if !ok {
+		return fmt.Errorf("failed to convert DHCP Start IP address to netaddr struct")
+	}
+
+	dhcpEnd, ok := netaddr.FromStdIP(slsSubnet.DHCPEnd)
+	if !ok {
+		return fmt.Errorf("failed to convert DHCP END IP address to netaddr struct")
+	}
+
+	// Move it forward!
+	dhcpStart, err := AdvanceIP(dhcpStart, count)
+	if err != nil {
+		return fmt.Errorf("failed to advice DHCP Start IP address: %w", err)
+	}
+
+	// Verify the DHCP Start address is smaller than the end address
+	if !dhcpStart.Less(dhcpEnd) {
+		return fmt.Errorf("new DHCP Start address %v is equal or larger then the DHCP End address %v", dhcpStart, dhcpEnd)
+	}
+
+	// Now update the SLS subnet
+	slsSubnet.DHCPStart = dhcpStart.IPAddr().IP
+	return nil
 }

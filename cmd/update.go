@@ -18,6 +18,7 @@ import (
 
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	"github.com/Cray-HPE/hms-bss/pkg/bssTypes"
+	dns_dhcp "github.com/Cray-HPE/hms-dns-dhcp/pkg"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/hashicorp/go-retryablehttp"
@@ -67,12 +68,18 @@ to quickly create a Cobra application.`,
 		bssURL := v.GetString("bss-url")
 		var bssClient *bss.BSSClient
 		if bssURL != "" {
-			fmt.Printf("Using BSS file at %s\n", bssURL)
+			fmt.Printf("Using BSS at %s\n", bssURL)
 
 			bssClient = bss.NewBSSClient(bssURL, httpClient.StandardClient(), "todo_token")
 		} else {
 			fmt.Println("Connection to BSS disabled")
 		}
+
+		// Setup HSM client
+		// TODO Expand hms-dns-dhcp to perform searches of IPs and MACs
+		hsmURL := v.GetString("hsm-url")
+
+		dns_dhcp.NewDHCPDNSHelper(hsmURL, httpClient)
 
 		//
 		// Parse input files
@@ -225,6 +232,16 @@ to quickly create a Cobra application.`,
 			}
 
 			ioutil.WriteFile("topology_changes.json", topologyChangesRaw, 0600)
+		}
+
+		//
+		// Check to see if any newly allocated IPs are currently in use
+		//
+		for _, event := range topologyChanges.IPReservationsAdded {
+			_ = event
+
+			// TODO check HSM EthernetInterfaces to see if this IP is in use.
+			// ip := event.IPReservation.IPAddress
 		}
 
 		//
@@ -413,6 +430,7 @@ func init() {
 	// locally with a SLS state file
 	updateCmd.Flags().String("sls-current-state", "http://localhost:8376", "Location of the current SLS state")
 	updateCmd.Flags().String("bss-url", "http://localhost:27778", "URL to BSS")
+	updateCmd.Flags().String("hsm-url", "http://localhost:27779", "URL to HSM")
 
 	updateCmd.Flags().String("cabinet-lookup", "cabinet_lookup.yaml", "YAML containing extra cabinet metadata")
 	updateCmd.Flags().String("application-node-config", "application_node_config.yaml", "YAML to control Application node identification during the SLS State generation")
