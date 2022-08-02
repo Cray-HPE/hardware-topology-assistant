@@ -16,8 +16,9 @@ func FindNextAvailableIP(slsSubnet sls_common.IPV4Subnet) (netaddr.IP, error) {
 		return netaddr.IP{}, fmt.Errorf("failed to parse subnet CIDR (%v): %w", slsSubnet.CIDR, err)
 	}
 
-	fmt.Println(subnet)
-	fmt.Println(subnet.Range())
+	// Debug
+	// fmt.Println(subnet)
+	// fmt.Println(subnet.Range())
 
 	var existingIPAddresses netaddr.IPSetBuilder
 	gatewayIP, ok := netaddr.FromStdIP(slsSubnet.Gateway)
@@ -38,18 +39,22 @@ func FindNextAvailableIP(slsSubnet sls_common.IPV4Subnet) (netaddr.IP, error) {
 	if err != nil {
 		return netaddr.IP{}, err
 	}
-	fmt.Println(existingIPAddressesSet.Ranges())
+
+	// Debug
+	// fmt.Println(existingIPAddressesSet.Ranges())
 
 	startingIP := subnet.Range().From().Next() // Start at the first usable available IP in the subnet.
 	endingIP := subnet.Range().To()            // This is the broadcast IP
 
 	for ip := startingIP; ip.Less(endingIP); ip = ip.Next() {
 		if !existingIPAddressesSet.Contains(ip) {
-			fmt.Println(ip, "not allocated")
+			// Debug
+			// fmt.Println(ip, "not allocated")
 			return ip, nil
 		}
 
-		fmt.Println(ip, "already allocated")
+		// Debug
+		// fmt.Println(ip, "already allocated")
 	}
 
 	return netaddr.IP{}, fmt.Errorf("subnet has no available IPs")
@@ -123,7 +128,8 @@ func FindNextAvailableSubnet(slsNetwork sls_common.NetworkExtraProperties) (neta
 		return netaddr.IPPrefix{}, err
 	}
 
-	fmt.Println("Network IP Address range", existingSubnetsSet.Ranges())
+	// Debug
+	// fmt.Println("Network IP Address range", existingSubnetsSet.Ranges())
 
 	network, err := netaddr.ParseIPPrefix(slsNetwork.CIDR)
 	if err != nil {
@@ -136,10 +142,12 @@ func FindNextAvailableSubnet(slsNetwork sls_common.NetworkExtraProperties) (neta
 	}
 	for _, subnet := range availableSubnets {
 		if existingSubnetsSet.Contains(subnet.IP()) {
-			fmt.Println(subnet, "-", subnet.Range(), "Taken")
+			// Debug
+			// fmt.Println(subnet, "-", subnet.Range(), "Taken")
 			continue
 		}
-		fmt.Println(subnet, "-", subnet.Range(), "is free!")
+		// Debug
+		// fmt.Println(subnet, "-", subnet.Range(), "is free!")
 		return subnet, nil
 	}
 
@@ -208,9 +216,11 @@ func AllocateIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias strin
 	// using the IP address.
 
 	// Verify IP is within the static IP range
-	fmt.Println("DHCP Start", slsSubnet.DHCPStart)
+	// Debug
+	// fmt.Println("DHCP Start", slsSubnet.DHCPStart)
 	if slsSubnet.DHCPStart != nil {
-		fmt.Println("Enforcing static IP address range")
+		// Debug
+		// fmt.Println("Enforcing static IP address range")
 		dhcpStart, ok := netaddr.FromStdIP(slsSubnet.DHCPStart)
 		if !ok {
 			return sls_common.IPReservation{}, fmt.Errorf("failed to convert DHCP Start IP address to netaddr struct")
@@ -220,7 +230,8 @@ func AllocateIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias strin
 			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with xname (%v) and IP %s is outside the static IP address range - starting DHCP IP is %s", xname.String(), ip.String(), slsSubnet.DHCPStart.String())
 		}
 	} else {
-		fmt.Println("No DHCP range")
+		// Debug
+		// fmt.Println("No DHCP range")
 	}
 
 	return sls_common.IPReservation{

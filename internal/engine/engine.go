@@ -11,7 +11,6 @@ import (
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/mitchellh/mapstructure"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
-	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ipam"
 	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 )
@@ -22,7 +21,6 @@ type TopologyEngine struct {
 
 type EngineInput struct {
 	Paddle                ccj.Paddle
-	CabinetLookup         configs.CabinetLookup
 	ApplicationNodeConfig csi.SLSGeneratorApplicationNodeConfig
 
 	CurrentSLSState sls_common.SLSState
@@ -60,11 +58,42 @@ type TopologyChanges struct {
 }
 
 func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
+	//
+	// Build the expected hardware state of the system
+	//
+
+	// Build the Cabinet lookup structure from the provided CCJ
+	cabinetLookup, err := ccj.DetermineCabinetLookup(te.Input.Paddle)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the cabinet lookup: %w", err)
+	}
+
+	{
+		// Debug
+		cabinetLookupRaw, err := json.MarshalIndent(cabinetLookup, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Println("Cabinet lookup:")
+		fmt.Println(string(cabinetLookupRaw))
+	}
+
 	// Build up the expected SLS hardware state from the provided CCJ
-	expectedSLSState, err := ccj.BuildExpectedHardwareState(te.Input.Paddle, te.Input.CabinetLookup, te.Input.ApplicationNodeConfig)
+	expectedSLSState, err := ccj.BuildExpectedHardwareState(te.Input.Paddle, cabinetLookup, te.Input.ApplicationNodeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expected SLS hardware state: %w", err)
 	}
+
+	// Prune Mountain hardware from current and expected state
+	// The initial version of this tool is aimed toward to adding river hardware only, so lets strip
+	// mountain hardware from consideration.
+	expectedSLSState.Hardware = sls.FilterHardware(expectedSLSState.Hardware, func(hardware sls_common.GenericHardware) bool {
+		return hardware.Class == sls_common.ClassRiver
+	})
+	te.Input.CurrentSLSState.Hardware = sls.FilterHardware(te.Input.CurrentSLSState.Hardware, func(hardware sls_common.GenericHardware) bool {
+		return hardware.Class == sls_common.ClassRiver
+	})
 
 	//
 	// Compare the current hardware state with the expected hardware state
@@ -105,6 +134,9 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	}
 
 	// TODO Disallow for mountain cabinet additions? Or for right now just ignore them all add stuff with the River class
+
+	// TODO Verify that no hardware was moved, which would appear as a remove and add.
+	// TODO Verify all of the new hardware has unique aliases.
 
 	//
 	// Check for new hardware additions that require changes to the network
@@ -198,8 +230,25 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	for i, hardware := range hardwareAdded {
 		hmsType := hardware.TypeString
 		if hmsType == xnametypes.CDUMgmtSwitch || hmsType == xnametypes.MgmtHLSwitch || hmsType == xnametypes.MgmtSwitch {
+			// Get the switch's alias
+			var aliases []string
+			switch ep := hardware.ExtraPropertiesRaw.(type) {
+			case sls_common.ComptypeCDUMgmtSwitch:
+				aliases = ep.Aliases
+			case sls_common.ComptypeMgmtHLSwitch:
+				aliases = ep.Aliases
+			case sls_common.ComptypeMgmtSwitch:
+				aliases = ep.Aliases
+			default:
+				return nil, fmt.Errorf("switch (%s) has invalid or missing extra properties structure", hardware.Xname)
+			}
+
+			if len(aliases) != 1 {
+				return nil, fmt.Errorf("switch (%s) has unexpected number of aliases (%d) expected 1", hardware.Xname, len(aliases))
+			}
+
 			// Allocation IP for Switch
-			fmt.Printf("Allocating IPs for %s\n", hardware.Xname)
+			fmt.Printf("%s (%s): Allocating IPs for switch\n", hardware.Xname, aliases[0])
 
 			// TODO if CSM 1.0 is going to be supported at some point with this tool, the CMN network needs to become optional
 			for _, networkName := range []string{"HMN", "NMN", "MTL", "CMN"} {
@@ -221,30 +270,13 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 					return nil, fmt.Errorf("unable to parse switch xname (%s)", hardware.Xname)
 				}
 
-				// Get the switches alias
-				var aliases []string
-				switch ep := hardware.ExtraPropertiesRaw.(type) {
-				case sls_common.ComptypeCDUMgmtSwitch:
-					aliases = ep.Aliases
-				case sls_common.ComptypeMgmtHLSwitch:
-					aliases = ep.Aliases
-				case sls_common.ComptypeMgmtSwitch:
-					aliases = ep.Aliases
-				default:
-					return nil, fmt.Errorf("switch (%s) has invalid or missing extra properties structure", hardware.Xname)
-				}
-
-				if len(aliases) != 1 {
-					return nil, fmt.Errorf("switch (%s) has unexpected number of aliases (%d) expected 1", hardware.Xname, len(aliases))
-				}
-
 				// Allocate the IP!
 				ipReservation, err := ipam.AllocateIP(slsSubnet, xname, aliases[0])
 				if err != nil {
 					return nil, fmt.Errorf("unable to allocate IP for switch (%s) in network (%s): %w", xname.String(), networkName, err)
 				}
 
-				fmt.Printf("Allocated IP %s in subnet network_hardware in network %s for switch %s (%s) \n", ipReservation.IPAddress.String(), networkName, hardware.Xname, aliases[0])
+				fmt.Printf("%s (%s): Allocated IP %s in subnet network_hardware in network %s\n", hardware.Xname, aliases[0], ipReservation.IPAddress.String(), networkName)
 				ipReservationsAdded = append(ipReservationsAdded, IPReservationChange{
 					NetworkName:    networkName,
 					SubnetName:     "network_hardware",
@@ -440,7 +472,7 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 		fmt.Printf("  - Expected: %s\n", string(hardwareRaw))
 
 		// Actual Hardware json
-		hardwareRaw, err = json.Marshal(pair.HardwareA)
+		hardwareRaw, err = json.Marshal(pair.HardwareB)
 		if err != nil {
 			panic(err)
 		}

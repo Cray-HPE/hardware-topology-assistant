@@ -39,7 +39,8 @@ func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLook
 	// Iterate over the paddle file to build of SLS data
 	allHardware := map[string]sls_common.GenericHardware{}
 	for _, topologyNode := range paddle.Topology {
-		fmt.Println(topologyNode.Architecture, topologyNode.CommonName)
+		// Debug
+		// fmt.Println(topologyNode.Architecture, topologyNode.CommonName)
 
 		//
 		// Build the SLS hardware representation
@@ -552,7 +553,7 @@ func BuildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 
 	destinationPorts := topologyNode.FindPorts(slot)
 	if len(destinationPorts) == 0 {
-		fmt.Printf("%s does not have a connection to the HMN\n", hardware.Xname)
+		fmt.Printf("%s (%s) does not have a connection to the HMN\n", hardware.Xname, topologyNode.CommonName)
 		return sls_common.GenericHardware{}, nil
 	} else if len(destinationPorts) != 1 {
 		return sls_common.GenericHardware{}, fmt.Errorf("unexpected number of '%s' ports found (%v) expected 1", slot, len(destinationPorts))

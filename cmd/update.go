@@ -20,7 +20,6 @@ import (
 	"github.com/Cray-HPE/hms-bss/pkg/bssTypes"
 	dns_dhcp "github.com/Cray-HPE/hms-dns-dhcp/pkg"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
-	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
@@ -28,7 +27,6 @@ import (
 	"github.hpe.com/sjostrand/topology-tool/internal/engine"
 	"github.hpe.com/sjostrand/topology-tool/pkg/bss"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
-	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 	"gopkg.in/yaml.v2"
 )
@@ -58,11 +56,8 @@ to quickly create a Cobra application.`,
 		httpClient := retryablehttp.NewClient()
 
 		// Setup SLS client
-		currentSLSStateLocation := v.GetString("sls-current-state")
-		var slsClient *sls_client.SLSClient
-		if strings.HasPrefix(currentSLSStateLocation, "http") {
-			slsClient = sls_client.NewSLSClient(currentSLSStateLocation, httpClient.StandardClient(), "")
-		}
+		currentSLSStateLocation := v.GetString("sls-url")
+		slsClient := sls_client.NewSLSClient(currentSLSStateLocation, httpClient.StandardClient(), "")
 
 		// Setup BSS client
 		bssURL := v.GetString("bss-url")
@@ -111,19 +106,6 @@ to quickly create a Cobra application.`,
 			panic(err)
 		}
 
-		// Read in cabinet lookup
-		cabinetLookupFile := v.GetString("cabinet-lookup")
-		fmt.Printf("Using cabinet lookup file at %s\n", cabinetLookupFile)
-		cabinetLookupRaw, err := ioutil.ReadFile(cabinetLookupFile)
-		if err != nil {
-			panic(err)
-		}
-
-		var cabinetLookup configs.CabinetLookup
-		if err := yaml.Unmarshal(cabinetLookupRaw, &cabinetLookup); err != nil {
-			panic(err)
-		}
-
 		// Read in application_node_config.yaml
 		// TODO the prefixes list is not being used, as we are assuming all unknown nodes are application
 		applicationNodeConfigFile := v.GetString("application-node-config")
@@ -147,24 +129,12 @@ to quickly create a Cobra application.`,
 		//
 		// Retrieve current state from the system
 		//
-		fmt.Printf("Using current SLS state at %s\n", currentSLSStateLocation)
+		fmt.Printf("Retrieving current SLS state from %s\n", currentSLSStateLocation)
 
-		var currentSLSState sls_common.SLSState
-		if strings.HasPrefix(currentSLSStateLocation, "http") {
-			currentSLSState, err = slsClient.GetDumpState(ctx)
-			if err != nil {
-				// TODO give a better error message
-				panic(err)
-			}
-		} else {
-			currentSLSStateRaw, err := ioutil.ReadFile(currentSLSStateLocation)
-			if err != nil {
-				panic(err) // TODO
-			}
-
-			if err := json.Unmarshal(currentSLSStateRaw, &currentSLSState); err != nil {
-				panic(err) // TODO
-			}
+		currentSLSState, err := slsClient.GetDumpState(ctx)
+		if err != nil {
+			// TODO give a better error message
+			panic(err)
 		}
 
 		// TOOD Ideally we could add the initial set of hardware to SLS, if the systems networking information
@@ -203,7 +173,6 @@ to quickly create a Cobra application.`,
 		topologyEngine := engine.TopologyEngine{
 			Input: engine.EngineInput{
 				Paddle:                paddle,
-				CabinetLookup:         cabinetLookup,
 				ApplicationNodeConfig: applicationNodeConfig,
 				CurrentSLSState:       currentSLSState,
 			},
@@ -330,28 +299,28 @@ to quickly create a Cobra application.`,
 
 		}
 
-		{
-			//
-			// Debug stuff
-			//
-			fmt.Printf("%T - %T\n", expectedGlobalHostRecords, currentGlobalHostRecords)
-			fmt.Printf("%d - %d\n", len(expectedGlobalHostRecords), len(currentGlobalHostRecords))
-
-			expectedGlobalHostRecordsRaw, err := json.MarshalIndent(expectedGlobalHostRecords, "", "  ")
-			if err != nil {
-				panic(err)
-			}
-
-			ioutil.WriteFile("bss_global_host_records_expected.json", expectedGlobalHostRecordsRaw, 0600)
-
-			currentGlobalHostRecordsRaw, err := json.MarshalIndent(currentGlobalHostRecords, "", "  ")
-			if err != nil {
-				panic(err)
-			}
-
-			ioutil.WriteFile("bss_global_host_records_current.json", currentGlobalHostRecordsRaw, 0600)
-
-		}
+		// {
+		// 	//
+		// 	// Debug stuff
+		// 	//
+		// 	fmt.Printf("%T - %T\n", expectedGlobalHostRecords, currentGlobalHostRecords)
+		// 	fmt.Printf("%d - %d\n", len(expectedGlobalHostRecords), len(currentGlobalHostRecords))
+		//
+		// 	expectedGlobalHostRecordsRaw, err := json.MarshalIndent(expectedGlobalHostRecords, "", "  ")
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
+		//
+		// 	ioutil.WriteFile("bss_global_host_records_expected.json", expectedGlobalHostRecordsRaw, 0600)
+		//
+		// 	currentGlobalHostRecordsRaw, err := json.MarshalIndent(currentGlobalHostRecords, "", "  ")
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
+		//
+		// 	ioutil.WriteFile("bss_global_host_records_current.json", currentGlobalHostRecordsRaw, 0600)
+		//
+		// }
 
 		//
 		// Perform changes to SLS/HSM/BSS on the system to reflect the updated state.
@@ -428,7 +397,7 @@ func init() {
 	// TODO hack should point to a SLS service
 	// TODO Would be cool if this could work with both HTTP(s) with a SLS service, and
 	// locally with a SLS state file
-	updateCmd.Flags().String("sls-current-state", "http://localhost:8376", "Location of the current SLS state")
+	updateCmd.Flags().String("sls-url", "http://localhost:8376", "URL to SLS")
 	updateCmd.Flags().String("bss-url", "http://localhost:27778", "URL to BSS")
 	updateCmd.Flags().String("hsm-url", "http://localhost:27779", "URL to HSM")
 

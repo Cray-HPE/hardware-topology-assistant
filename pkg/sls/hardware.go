@@ -96,3 +96,15 @@ func FindManagementNCNs(slsState sls_common.SLSState) ([]sls_common.GenericHardw
 
 	return managementNCNs, nil
 }
+
+func FilterHardware(allHardware map[string]sls_common.GenericHardware, filter func(sls_common.GenericHardware) bool) map[string]sls_common.GenericHardware {
+	result := map[string]sls_common.GenericHardware{}
+
+	for xname, hardware := range allHardware {
+		if filter(hardware) {
+			result[xname] = hardware
+		}
+	}
+
+	return result
+}

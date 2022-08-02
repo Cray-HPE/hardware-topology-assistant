@@ -1,9 +1,0 @@
-# TODO make this cabinets.yaml, but that is a bit a work at the moment.
-river:
-- x3000
-- x3001
-EX2000: []
-EX2500: []
-EX3000:
-- x1000
-EX4000: []

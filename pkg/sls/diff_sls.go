@@ -1,11 +1,11 @@
 package sls
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
 
+	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 )
 
@@ -100,23 +100,23 @@ func HardwareUnion(a, b sls_common.SLSState) (identicalHardware []sls_common.Gen
 		}
 		extraPropertiesB = stripIpInformationFromHardware(extraPropertiesB)
 
-		// Expected Hardware json
-		hardwareRawA, err := json.Marshal(extraPropertiesA)
-		if err != nil {
-			panic(err)
-		}
-
-		// Actual Hardware json
-		hardwareRawB, err := json.Marshal(extraPropertiesB)
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Printf("raw    - %T - %T\n", hardwareA.ExtraPropertiesRaw, hardwareB.ExtraPropertiesRaw)
-		fmt.Printf("decode - %T - %T\n", extraPropertiesA, extraPropertiesB)
-		fmt.Printf("  - A: %s\n", string(hardwareRawA))
-		fmt.Printf("  - B: %s\n", string(hardwareRawB))
-		fmt.Println()
+		// // Expected Hardware json
+		// hardwareRawA, err := json.Marshal(extraPropertiesA)
+		// if err != nil {
+		// 	panic(err)
+		// }
+		//
+		// // Actual Hardware json
+		// hardwareRawB, err := json.Marshal(extraPropertiesB)
+		// if err != nil {
+		// 	panic(err)
+		// }
+		//
+		// fmt.Printf("raw    - %T - %T\n", hardwareA.ExtraPropertiesRaw, hardwareB.ExtraPropertiesRaw)
+		// fmt.Printf("decode - %T - %T\n", extraPropertiesA, extraPropertiesB)
+		// fmt.Printf("  - A: %s\n", string(hardwareRawA))
+		// fmt.Printf("  - B: %s\n", string(hardwareRawB))
+		// fmt.Println()
 
 		if !reflect.DeepEqual(extraPropertiesA, extraPropertiesB) {
 			differingContents = append(differingContents, hardwarePair)
@@ -142,6 +142,9 @@ func stripIpInformationFromHardware(extraPropertiesRaw interface{}) interface{} 
 	switch ep := extraPropertiesRaw.(type) {
 	case sls_common.ComptypeCabinet:
 		ep.Networks = nil
+		if cabinetKind := csi.CabinetKind(ep.Model); cabinetKind.IsModel() {
+			ep.Model = ""
+		}
 		return ep
 	case sls_common.ComptypeMgmtHLSwitch:
 		ep.IP4Addr = ""
