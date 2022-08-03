@@ -1,0 +1,12 @@
+x3000c0s15b0n0:
+  subrole: UAN
+  aliases:
+  - uan01
+x3000c0s16b0n0:
+  subrole: UAN
+  aliases:
+  - uan02
+x3001c0s16b0n0:
+  subrole: UAN
+  aliases:
+  - uan03

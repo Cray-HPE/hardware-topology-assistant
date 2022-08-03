@@ -148,6 +148,17 @@ to quickly create a Cobra application.`,
 			panic(err)
 		}
 
+		foundDuplicates := false
+		for alias, xnames := range currentApplicationNodeMetadata.AllAliases() {
+			if len(xnames) > 1 {
+				fmt.Printf("Alias %s is used by multiple application nodes: %s\n", alias, strings.Join(xnames, ","))
+			}
+		}
+		if foundDuplicates {
+			fmt.Println("The current SLS state contains application nodes that share the same alias. Please reconcile before continuing.")
+			os.Exit(1)
+		}
+
 		if applicationNodeMetadataFile == "" {
 			// Build up the application metadata config for the expected state of the system if no file was provided.
 			applicationNodeMetadata, err = ccj.BuildApplicationNodeMetadata(paddle, currentApplicationNodeMetadata)
@@ -156,24 +167,24 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		{
-			// Debug
-			raw, err := yaml.Marshal(currentApplicationNodeMetadata)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Println("Current Application node metadata")
-			fmt.Println(string(raw))
-
-			raw, err = yaml.Marshal(applicationNodeMetadata)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Println("Expected Application node metadata")
-			fmt.Println(string(raw))
-		}
+		// {
+		// 	// Debug
+		// 	raw, err := yaml.Marshal(currentApplicationNodeMetadata)
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
+		//
+		// 	fmt.Println("Current Application node metadata")
+		// 	fmt.Println(string(raw))
+		//
+		// 	raw, err = yaml.Marshal(applicationNodeMetadata)
+		// 	if err != nil {
+		// 		panic(err)
+		// 	}
+		//
+		// 	fmt.Println("Expected Application node metadata")
+		// 	fmt.Println(string(raw))
+		// }
 
 		// At this point we can detect if any application nodes are missing required data
 		// TODO Should we verify all SubRoles are valid against HSM?
@@ -195,8 +206,9 @@ to quickly create a Cobra application.`,
 			// TODO Rephrase
 			// TODO the summary wording if a an application node metadata file is needed could be improved
 			fmt.Println()
-			fmt.Println("New Application nodes are being added to the system which requires additional metadata")
+			fmt.Println("New Application nodes are being added to the system which requires additional metadata to be provided.")
 			fmt.Println("Please fill in all of the ~~FIXME~~ values in the application node metadata file.")
+			fmt.Println()
 
 			if applicationNodeMetadataFile == "" {
 				// Since no application node metadata file was provided and required information is not present,
@@ -205,12 +217,14 @@ to quickly create a Cobra application.`,
 
 				// Check to see if the file exists
 				if _, err := os.Stat(applicationNodeMetadataFile); err == nil {
-					fmt.Printf("Error %s already exists in the current directory.\n", applicationNodeMetadataFile)
-					fmt.Println()
-					fmt.Printf("Please add --application-node-metadata=%s to the command line arguments\n", applicationNodeMetadataFile)
+					fmt.Printf("Add --application-node-metadata=%s to the command line arguments and try again.\n", applicationNodeMetadataFile)
+					fmt.Printf("Error %s already exists in the current directory. Refusing to overwrite!\n", applicationNodeMetadataFile)
+					os.Exit(1)
 				}
 
 				// Write it out!
+				fmt.Printf("Application node metadata file is now available at: %s\n", applicationNodeMetadataFile)
+				fmt.Printf("Add --application-node-metadata=%s to the command line arguments and try again.\n", applicationNodeMetadataFile)
 				applicationNodeMetadataRaw, err := yaml.Marshal(applicationNodeMetadata)
 				if err != nil {
 					panic(err)
@@ -222,6 +236,19 @@ to quickly create a Cobra application.`,
 				}
 			}
 
+			os.Exit(1)
+		}
+
+		foundDuplicates = false
+		for alias, xnames := range applicationNodeMetadata.AllAliases() {
+			if len(xnames) > 1 {
+				fmt.Printf("Alias %s is used by multiple application nodes: %s\n", alias, strings.Join(xnames, ","))
+				foundDuplicates = true
+			}
+		}
+		if foundDuplicates {
+			fmt.Println("The proposed SLS state contains application nodes that share the same alias.")
+			fmt.Printf("Verify all application nodes being added to the system have unique aliases defined in %s\n", applicationNodeMetadataFile)
 			os.Exit(1)
 		}
 
@@ -361,21 +388,21 @@ to quickly create a Cobra application.`,
 				managementNCNBootParams[managementNCN.Xname].CloudInit.UserData["write_files"] = expectedWriteFiles
 				modifiedManagementNCNBootParams[managementNCN.Xname] = true
 
-				{
-					// Expected Hardware json
-					expected, err := json.Marshal(expectedWriteFiles)
-					if err != nil {
-						panic(err)
-					}
-					fmt.Printf("  - Expected: %s\n", string(expected))
+				// {
+				// 	// Expected Hardware json
+				// 	expected, err := json.Marshal(expectedWriteFiles)
+				// 	if err != nil {
+				// 		panic(err)
+				// 	}
+				// 	fmt.Printf("  - Expected: %s\n", string(expected))
 
-					// Actual Hardware json
-					current, err := json.Marshal(currentWriteFiles)
-					if err != nil {
-						panic(err)
-					}
-					fmt.Printf("  - Actual:   %s\n", string(current))
-				}
+				// 	// Actual Hardware json
+				// 	current, err := json.Marshal(currentWriteFiles)
+				// 	if err != nil {
+				// 		panic(err)
+				// 	}
+				// 	fmt.Printf("  - Actual:   %s\n", string(current))
+				// }
 			}
 
 		}

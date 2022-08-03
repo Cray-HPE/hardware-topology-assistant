@@ -13,6 +13,7 @@ import (
 	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ipam"
 	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
+	"gopkg.in/yaml.v2"
 )
 
 type TopologyEngine struct {
@@ -70,7 +71,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 
 	{
 		// Debug
-		cabinetLookupRaw, err := json.MarshalIndent(cabinetLookup, "", "  ")
+		cabinetLookupRaw, err := yaml.Marshal(cabinetLookup)
 		if err != nil {
 			return nil, err
 		}
