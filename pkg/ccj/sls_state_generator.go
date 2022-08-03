@@ -35,7 +35,7 @@ func extractNumber(numberRaw string) (int, error) {
 	return number, nil
 }
 
-func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.SLSState, error) {
+func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeMetadata configs.ApplicationNodeMetadataMap) (sls_common.SLSState, error) {
 	// Iterate over the paddle file to build of SLS data
 	allHardware := map[string]sls_common.GenericHardware{}
 	for _, topologyNode := range paddle.Topology {
@@ -45,7 +45,7 @@ func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLook
 		//
 		// Build the SLS hardware representation
 		//
-		hardware, err := BuildSLSHardware(topologyNode, paddle, cabinetLookup, applicationNodeConfig)
+		hardware, err := BuildSLSHardware(topologyNode, paddle, cabinetLookup, applicationNodeMetadata)
 		if err != nil {
 			panic(err)
 		}
@@ -139,8 +139,9 @@ func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLook
 	}, nil
 }
 
-func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.GenericHardware, error) {
+func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeMetadata configs.ApplicationNodeMetadataMap) (sls_common.GenericHardware, error) {
 	// TODO use CANU files for lookup
+	// ALso look at using type
 	switch topologyNode.Architecture {
 	case "cec":
 		// TODO SLS does not know anything about CEC, because HMS software doesn't support them.
@@ -163,7 +164,7 @@ func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup co
 		fallthrough
 	case "river_ncn_node_4_port":
 		// All node architecture needs to go through this function
-		return buildSLSNode(topologyNode, paddle, applicationNodeConfig)
+		return buildSLSNode(topologyNode, paddle, applicationNodeMetadata)
 	case "mountain_compute_leaf": // CDUMgmtSwitch
 		if strings.HasPrefix(topologyNode.Location.Rack, "x") {
 			// This CDU MgmtSwitch is present in a river cabinet.
@@ -252,24 +253,10 @@ func buildSLSCMC(location Location) (sls_common.GenericHardware, error) {
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, nil), nil
 }
 
-func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig) (sls_common.GenericHardware, error) {
-	cabinetOrdinal, err := extractNumber(topologyNode.Location.Rack)
-	if err != nil {
-		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+func BuildNodeExtraProperties(topologyNode TopologyNode) (extraProperties sls_common.ComptypeNode, err error) {
+	if topologyNode.Type != "server" && topologyNode.Type != "node" {
+		return sls_common.ComptypeNode{}, fmt.Errorf("unexpected topology node type (%s) expected (server or node)", topologyNode.Type)
 	}
-
-	// This rack U is used for single and dual node chassis
-	rackUOrdinal, err := extractNumber(topologyNode.Location.Elevation)
-	if err != nil {
-		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
-	}
-
-	chassisOrdinal := 0 // TODO EX2500
-
-	bmcOrdinal := 0 // This is the default for single node chassis
-
-	// Build up the nodes ExtraProperties
-	var extraProperties sls_common.ComptypeNode
 
 	// Now to make Sean L sad
 	// TODO NCNs need their NID, which is automatically assigned serially via CSI.
@@ -289,7 +276,7 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfi
 		extraProperties.Role = "Compute"
 		extraProperties.NID, err = extractNumber(topologyNode.CommonName)
 		if err != nil {
-			return sls_common.GenericHardware{}, fmt.Errorf("unable to extract NID from common name (%s) due to: %w", topologyNode.CommonName, err)
+			return sls_common.ComptypeNode{}, fmt.Errorf("unable to extract NID from common name (%s) due to: %w", topologyNode.CommonName, err)
 		}
 
 		// The CANU common name is different the compute node aliases that are present in SLS
@@ -302,6 +289,29 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfi
 		// Application nodes don't have a NID due to reasons.
 		extraProperties.Role = "Application"
 	}
+
+	return extraProperties, nil
+}
+
+func BuildNodeXname(topologyNode TopologyNode, paddle Paddle, extraProperties sls_common.ComptypeNode) (xnames.Node, error) {
+	if topologyNode.Type != "server" && topologyNode.Type != "node" {
+		return xnames.Node{}, fmt.Errorf("unexpected topology node type (%s) expected (server or node)", topologyNode.Type)
+	}
+
+	cabinetOrdinal, err := extractNumber(topologyNode.Location.Rack)
+	if err != nil {
+		return xnames.Node{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
+	}
+
+	// This rack U is used for single and dual node chassis
+	rackUOrdinal, err := extractNumber(topologyNode.Location.Elevation)
+	if err != nil {
+		return xnames.Node{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
+	}
+
+	chassisOrdinal := 0 // TODO EX2500
+
+	bmcOrdinal := 0 // This is the default for single node chassis
 
 	// Determine the BMC ordinal and override the rack U if needed
 	// Is this an dense quad node chassis?
@@ -322,15 +332,15 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfi
 			var ok bool
 			cmc, ok = paddle.FindNodeByID(cmcPorts[0].DestNodeID)
 			if !ok {
-				return sls_common.GenericHardware{}, fmt.Errorf("unable to find parent topology node with id (%v)", cmcPorts[0].DestNodeID)
+				return xnames.Node{}, fmt.Errorf("unable to find parent topology node with id (%v)", cmcPorts[0].DestNodeID)
 			}
 		} else {
-			return sls_common.GenericHardware{}, fmt.Errorf("unexpected number of 'cmc' ports found (%v) expected 1", len(cmcPorts))
+			return xnames.Node{}, fmt.Errorf("unexpected number of 'cmc' ports found (%v) expected 1", len(cmcPorts))
 		}
 
 		// This nodes cabinet and the CMC cabinet need to agrees
 		if topologyNode.Location.Rack != cmc.Location.Rack {
-			return sls_common.GenericHardware{}, fmt.Errorf("parent topology has inconsistent rack location (%v) expected %v", cmc.Location.Rack, topologyNode.Location.Rack)
+			return xnames.Node{}, fmt.Errorf("parent topology has inconsistent rack location (%v) expected %v", cmc.Location.Rack, topologyNode.Location.Rack)
 		}
 
 		// TODO Verify the Parent is either equal rack elevation or 1 below this node
@@ -339,15 +349,15 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfi
 		// Override the rack U with the CMC/parent rack U
 		rackUOrdinal, err = extractNumber(cmc.Location.Elevation)
 		if err != nil {
-			return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal from parent topology node due to: %w", err)
+			return xnames.Node{}, fmt.Errorf("unable to extract rack U ordinal from parent topology node due to: %w", err)
 		}
 
 		// Calculate the BMC ordinal, which is derived from its NID.
 		if extraProperties.Role != "Compute" {
-			return sls_common.GenericHardware{}, fmt.Errorf("calculating BMC ordinal for a dense quad node chassis for a non compute node (%v). Is this even supported?", extraProperties.Role)
+			return xnames.Node{}, fmt.Errorf("calculating BMC ordinal for a dense quad node chassis for a non compute node (%v). Is this even supported?", extraProperties.Role)
 		}
 		if extraProperties.NID == 0 {
-			return sls_common.GenericHardware{}, fmt.Errorf("are zero NIDs even supported? I don't think so...")
+			return xnames.Node{}, fmt.Errorf("are zero NIDs even supported? I don't think so...")
 		}
 		bmcOrdinal = ((extraProperties.NID - 1) % 4) + 1
 	}
@@ -363,29 +373,24 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfi
 		Node:          0, // Assumption: Currently all river hardware that CSM supports BMCs only control one node.
 	}
 
+	return xname, nil
+}
+
+func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeMetadata configs.ApplicationNodeMetadataMap) (sls_common.GenericHardware, error) {
+	// Build up the nodes ExtraProperties
+	extraProperties, err := BuildNodeExtraProperties(topologyNode)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to build node extra properties: %w", err)
+	}
+
+	// Build the xname!
+	xname, err := BuildNodeXname(topologyNode, paddle, extraProperties)
+	if err != nil {
+		return sls_common.GenericHardware{}, fmt.Errorf("unable to build node xname: %w", err)
+	}
+
+	// Now we need to deal with application node specific stuff.
 	if extraProperties.Role == "Application" {
-		// Merge default Application node prefixes with the user provided prefixes.
-		prefixes := []string{}
-		prefixes = append(prefixes, applicationNodeConfig.Prefixes...)
-		prefixes = append(prefixes, csi.DefaultApplicationNodePrefixes...)
-
-		// Merge default Application node subroles with the user provided subroles. User provided subroles can override the default subroles
-		subRoles := map[string]string{}
-		for prefix, subRole := range csi.DefaultApplicationNodeSubroles {
-			subRoles[prefix] = subRole
-		}
-		for prefix, subRole := range applicationNodeConfig.PrefixHSMSubroles {
-			subRoles[prefix] = subRole
-		}
-
-		// Check source to see if it matches any know application node prefix
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(topologyNode.CommonName, prefix) {
-				// Found an application node!
-				extraProperties.SubRole = subRoles[prefix]
-			}
-		}
-
 		// Question: Does it make sense for application nodes to not have a sub-role? It has caused more confision then it has helped.
 
 		// TODO/Question CANU common name or provided aliases via application node config?
@@ -393,7 +398,13 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeConfi
 		// extraProperties.Aliases = []string{
 		// 	topologyNode.CommonName,
 		// }
-		extraProperties.Aliases = applicationNodeConfig.Aliases[xname.String()]
+		metadata, ok := applicationNodeMetadata[xname.String()]
+		if !ok {
+			return sls_common.GenericHardware{}, fmt.Errorf("unable to find node xname (%s) in the application node metadata map", xname.String())
+		}
+
+		extraProperties.SubRole = metadata.SubRole
+		extraProperties.Aliases = metadata.Aliases
 
 		if len(extraProperties.Aliases) == 0 {
 			return sls_common.GenericHardware{}, fmt.Errorf("application node (%s) has no defined aliases", xname.String())

@@ -16,7 +16,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	"github.com/Cray-HPE/hms-bss/pkg/bssTypes"
 	dns_dhcp "github.com/Cray-HPE/hms-dns-dhcp/pkg"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
@@ -27,6 +26,7 @@ import (
 	"github.hpe.com/sjostrand/topology-tool/internal/engine"
 	"github.hpe.com/sjostrand/topology-tool/pkg/bss"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
+	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 	"gopkg.in/yaml.v2"
 )
@@ -108,22 +108,20 @@ to quickly create a Cobra application.`,
 
 		// Read in application_node_config.yaml
 		// TODO the prefixes list is not being used, as we are assuming all unknown nodes are application
-		applicationNodeConfigFile := v.GetString("application-node-config")
-		fmt.Printf("Using application node config file at %s\n", applicationNodeConfigFile)
-		applicationNodeRaw, err := ioutil.ReadFile(applicationNodeConfigFile)
-		if err != nil {
-			panic(err) // TODO
-		}
+		applicationNodeMetadataFile := v.GetString("application-node-metadata")
+		var applicationNodeMetadata configs.ApplicationNodeMetadataMap
+		if applicationNodeMetadataFile == "" {
+			fmt.Printf("No application node metadata file provided.\n")
+		} else {
+			fmt.Printf("Using application node metadata file at %s\n", applicationNodeMetadataFile)
+			applicationNodeMetadataRaw, err := ioutil.ReadFile(applicationNodeMetadataFile)
+			if err != nil {
+				panic(err) // TODO
+			}
 
-		var applicationNodeConfig csi.SLSGeneratorApplicationNodeConfig
-		if err := yaml.Unmarshal(applicationNodeRaw, &applicationNodeConfig); err != nil {
-			panic(err) // TODO
-		}
-		if err := applicationNodeConfig.Normalize(); err != nil {
-			panic(err) // TODO
-		}
-		if err := applicationNodeConfig.Validate(); err != nil {
-			panic(err) // TODO
+			if err := yaml.Unmarshal(applicationNodeMetadataRaw, &applicationNodeMetadata); err != nil {
+				panic(err) // TODO
+			}
 		}
 
 		//
@@ -142,6 +140,89 @@ to quickly create a Cobra application.`,
 		if len(currentSLSState.Networks) == 0 {
 			fmt.Println("Refusing to continue as the current SLS state does not contain networking information")
 			return
+		}
+
+		// Build up the application node metadata for the current state of the system
+		currentApplicationNodeMetadata, err := sls.BuildApplicationNodeMetadata(currentSLSState.Hardware)
+		if err != nil {
+			panic(err)
+		}
+
+		if applicationNodeMetadataFile == "" {
+			// Build up the application metadata config for the expected state of the system if no file was provided.
+			applicationNodeMetadata, err = ccj.BuildApplicationNodeMetadata(paddle, currentApplicationNodeMetadata)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		{
+			// Debug
+			raw, err := yaml.Marshal(currentApplicationNodeMetadata)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println("Current Application node metadata")
+			fmt.Println(string(raw))
+
+			raw, err = yaml.Marshal(applicationNodeMetadata)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println("Expected Application node metadata")
+			fmt.Println(string(raw))
+		}
+
+		// At this point we can detect if any application nodes are missing required data
+		// TODO Should we verify all SubRoles are valid against HSM?
+		foundFixMes := false
+		for xname, metadata := range applicationNodeMetadata {
+			if metadata.SubRole == "~~FIXME~~" {
+				fmt.Printf("Application node %s has SubRole of ~~FIXME~~\n", xname)
+				foundFixMes = true
+			}
+
+			for _, alias := range metadata.Aliases {
+				if alias == "~~FIXME~~" {
+					fmt.Printf("Application node %s has Alias of ~~FIXME~~\n", xname)
+					foundFixMes = true
+				}
+			}
+		}
+		if foundFixMes {
+			// TODO Rephrase
+			// TODO the summary wording if a an application node metadata file is needed could be improved
+			fmt.Println()
+			fmt.Println("New Application nodes are being added to the system which requires additional metadata")
+			fmt.Println("Please fill in all of the ~~FIXME~~ values in the application node metadata file.")
+
+			if applicationNodeMetadataFile == "" {
+				// Since no application node metadata file was provided and required information is not present,
+				// write it out so the missing information can be filled in.
+				applicationNodeMetadataFile = "application_node_metadata.yaml"
+
+				// Check to see if the file exists
+				if _, err := os.Stat(applicationNodeMetadataFile); err == nil {
+					fmt.Printf("Error %s already exists in the current directory.\n", applicationNodeMetadataFile)
+					fmt.Println()
+					fmt.Printf("Please add --application-node-metadata=%s to the command line arguments\n", applicationNodeMetadataFile)
+				}
+
+				// Write it out!
+				applicationNodeMetadataRaw, err := yaml.Marshal(applicationNodeMetadata)
+				if err != nil {
+					panic(err)
+				}
+
+				err = ioutil.WriteFile(applicationNodeMetadataFile, applicationNodeMetadataRaw, 0600)
+				if err != nil {
+					panic(err)
+				}
+			}
+
+			os.Exit(1)
 		}
 
 		// Retrieve BSS data
@@ -172,9 +253,9 @@ to quickly create a Cobra application.`,
 		//
 		topologyEngine := engine.TopologyEngine{
 			Input: engine.EngineInput{
-				Paddle:                paddle,
-				ApplicationNodeConfig: applicationNodeConfig,
-				CurrentSLSState:       currentSLSState,
+				Paddle:                  paddle,
+				ApplicationNodeMetadata: applicationNodeMetadata,
+				CurrentSLSState:         currentSLSState,
 			},
 		}
 
@@ -402,7 +483,7 @@ func init() {
 	updateCmd.Flags().String("hsm-url", "http://localhost:27779", "URL to HSM")
 
 	updateCmd.Flags().String("cabinet-lookup", "cabinet_lookup.yaml", "YAML containing extra cabinet metadata")
-	updateCmd.Flags().String("application-node-config", "application_node_config.yaml", "YAML to control Application node identification during the SLS State generation")
+	updateCmd.Flags().String("application-node-metadata", "", "YAML to control Application node identification during the SLS State generation. Only required if application nodes are being added to the system")
 }
 
 func setupContext() context.Context {

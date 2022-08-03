@@ -6,6 +6,7 @@ import (
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/mitchellh/mapstructure"
+	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 )
 
 func DecodeHardwareExtraProperties(hardware sls_common.GenericHardware) (result interface{}, err error) {
@@ -107,4 +108,35 @@ func FilterHardware(allHardware map[string]sls_common.GenericHardware, filter fu
 	}
 
 	return result
+}
+
+func BuildApplicationNodeMetadata(allHardware map[string]sls_common.GenericHardware) (configs.ApplicationNodeMetadataMap, error) {
+	metadata := configs.ApplicationNodeMetadataMap{}
+
+	// Find all application nodes
+	for _, hardware := range allHardware {
+
+		var nodeEP sls_common.ComptypeNode
+		if ep, ok := hardware.ExtraPropertiesRaw.(sls_common.ComptypeNode); ok {
+			// If we are there, then the extra properties where created at runtime
+			nodeEP = ep
+		} else {
+			// If we are there, then the extra properties came from JSON
+			if err := mapstructure.Decode(hardware.ExtraPropertiesRaw, &nodeEP); err != nil {
+				return nil, err
+			}
+		}
+
+		if nodeEP.Role != "Application" {
+			continue
+		}
+
+		// Found an application node!
+		metadata[hardware.Xname] = configs.ApplicationNodeMetadata{
+			SubRole: nodeEP.SubRole,
+			Aliases: nodeEP.Aliases,
+		}
+	}
+
+	return metadata, nil
 }

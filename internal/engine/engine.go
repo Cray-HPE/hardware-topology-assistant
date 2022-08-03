@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Cray-HPE/cray-site-init/pkg/csi"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/mitchellh/mapstructure"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
+	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 	"github.hpe.com/sjostrand/topology-tool/pkg/ipam"
 	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 )
@@ -20,8 +20,8 @@ type TopologyEngine struct {
 }
 
 type EngineInput struct {
-	Paddle                ccj.Paddle
-	ApplicationNodeConfig csi.SLSGeneratorApplicationNodeConfig
+	Paddle                  ccj.Paddle
+	ApplicationNodeMetadata configs.ApplicationNodeMetadataMap
 
 	CurrentSLSState sls_common.SLSState
 }
@@ -80,7 +80,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	}
 
 	// Build up the expected SLS hardware state from the provided CCJ
-	expectedSLSState, err := ccj.BuildExpectedHardwareState(te.Input.Paddle, cabinetLookup, te.Input.ApplicationNodeConfig)
+	expectedSLSState, err := ccj.BuildExpectedHardwareState(te.Input.Paddle, cabinetLookup, te.Input.ApplicationNodeMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expected SLS hardware state: %w", err)
 	}
@@ -345,7 +345,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 			if !present {
 				continue
 			}
-			fmt.Printf("Checking to see if the static IP address range for the bootstrap_dhcp subnet in %s has enough room.\n", networkName)
+			fmt.Printf("Checking to see if the static IP address range for the bootstrap_dhcp subnet in %s has enough room for added UAN(s).\n", networkName)
 
 			// Retrieve the subnet
 			slsSubnet, slsSubnetIndex, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
@@ -381,14 +381,17 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 
 	// Allocate IP addresses
 	for _, uan := range uans {
-		for _, networkName := range []string{"CAN", "CHN"} {
-			fmt.Printf("Allocating IP for UAN %s on the %s network\n", uan.xname, networkName)
+		fmt.Printf("%s (%s): Allocating IPs For UAN\n", uan.xname, uan.alias)
 
+		for _, networkName := range []string{"CAN", "CHN"} {
 			// Only allocate an IP for the UAN if the network exists
 			networkExtraProperties, present := networkExtraProperties[networkName]
 			if !present {
 				continue
 			}
+
+			// Debug
+			//fmt.Printf("%s (%s): Allocating IP on the %s network\n", uan.xname, uan.alias, networkName)
 
 			// Retrieve the subnet
 			slsSubnet, slsSubnetIndex, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
@@ -413,7 +416,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 				ChangedByXname: uan.xname,
 			})
 
-			fmt.Printf("Allocated IP %s for UAN %s on the %s network\n", ipReservation.IPAddress, uan.xname, networkName)
+			fmt.Printf("%s (%s): Allocated IP %s on the %s network\n", uan.xname, uan.alias, ipReservation.IPAddress, networkName)
 
 			// Push in the network IP Reservation into the subnet
 			slsSubnet.IPReservations = append(slsSubnet.IPReservations, ipReservation)
