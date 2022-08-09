@@ -830,7 +830,7 @@
             "Name": "bootstrap_dhcp",
             "VlanID": 5,
             "Gateway": "10.103.9.1",
-            "DHCPStart": "10.103.9.18",
+            "DHCPStart": "10.103.9.17",
             "DHCPEnd": "10.103.9.63"
           }
         ]

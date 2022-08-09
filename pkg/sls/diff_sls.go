@@ -149,10 +149,12 @@ func stripIpInformationFromHardware(extraPropertiesRaw interface{}) interface{} 
 	case sls_common.ComptypeMgmtHLSwitch:
 		ep.IP4Addr = ""
 		ep.IP6Addr = ""
+		ep.Model = "" // Not guaranteed that the system was installed with information about the switch model.
 		return ep
 	case sls_common.ComptypeMgmtSwitch:
 		ep.IP4Addr = ""
 		ep.IP6Addr = ""
+		ep.Model = "" // Not guaranteed that the system was installed with information about the switch model.
 		return ep
 	}
 

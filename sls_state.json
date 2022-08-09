@@ -1,0 +1,511 @@
+{
+  "Hardware": {
+    "x3000": {
+      "Parent": "s0",
+      "Xname": "x3000",
+      "Type": "comptype_cabinet",
+      "Class": "River",
+      "TypeString": "Cabinet",
+      "ExtraProperties": {
+        "Networks": {}
+      }
+    },
+    "x3000c0h15s1": {
+      "Parent": "x3000c0h15",
+      "Xname": "x3000c0h15s1",
+      "Type": "comptype_hl_switch",
+      "Class": "River",
+      "TypeString": "MgmtHLSwitch",
+      "ExtraProperties": {
+        "Brand": "Mellanox",
+        "Model": "SN2700",
+        "Aliases": [
+          "sw-spine-002"
+        ]
+      }
+    },
+    "x3000c0h15s2": {
+      "Parent": "x3000c0h15",
+      "Xname": "x3000c0h15s2",
+      "Type": "comptype_hl_switch",
+      "Class": "River",
+      "TypeString": "MgmtHLSwitch",
+      "ExtraProperties": {
+        "Brand": "Mellanox",
+        "Model": "SN2700",
+        "Aliases": [
+          "sw-spine-001"
+        ]
+      }
+    },
+    "x3000c0h25s1": {
+      "Parent": "x3000c0h25",
+      "Xname": "x3000c0h25s1",
+      "Type": "comptype_hl_switch",
+      "Class": "River",
+      "TypeString": "MgmtHLSwitch",
+      "ExtraProperties": {
+        "Brand": "Arista",
+        "Model": "customer_edge_router",
+        "Aliases": [
+          "sw-edge-001"
+        ]
+      }
+    },
+    "x3000c0r16b0": {
+      "Parent": "x3000c0r16",
+      "Xname": "x3000c0r16b0",
+      "Type": "comptype_rtr_bmc",
+      "Class": "River",
+      "TypeString": "RouterBMC",
+      "ExtraProperties": {
+        "Username": "vault://hms-creds/x3000c0r16b0",
+        "Password": "vault://hms-creds/x3000c0r16b0"
+      }
+    },
+    "x3000c0s10b1n0": {
+      "Parent": "x3000c0s10b1",
+      "Xname": "x3000c0s10b1n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 1,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000001"
+        ]
+      }
+    },
+    "x3000c0s10b2n0": {
+      "Parent": "x3000c0s10b2",
+      "Xname": "x3000c0s10b2n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 2,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000002"
+        ]
+      }
+    },
+    "x3000c0s10b3n0": {
+      "Parent": "x3000c0s10b3",
+      "Xname": "x3000c0s10b3n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 3,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000003"
+        ]
+      }
+    },
+    "x3000c0s10b4n0": {
+      "Parent": "x3000c0s10b4",
+      "Xname": "x3000c0s10b4n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "NID": 4,
+        "Role": "Compute",
+        "Aliases": [
+          "nid000004"
+        ]
+      }
+    },
+    "x3000c0s10b999": {
+      "Parent": "x3000c0s10",
+      "Xname": "x3000c0s10b999",
+      "Type": "comptype_ncard",
+      "Class": "River",
+      "TypeString": "NodeBMC"
+    },
+    "x3000c0s1b0n0": {
+      "Parent": "x3000c0s1b0",
+      "Xname": "x3000c0s1b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Master",
+        "Aliases": [
+          "ncn-m001"
+        ]
+      }
+    },
+    "x3000c0s23b0n0": {
+      "Parent": "x3000c0s23b0",
+      "Xname": "x3000c0s23b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Application",
+        "SubRole": "UAN",
+        "Aliases": [
+          "uan01"
+        ]
+      }
+    },
+    "x3000c0s2b0n0": {
+      "Parent": "x3000c0s2b0",
+      "Xname": "x3000c0s2b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Master",
+        "Aliases": [
+          "ncn-m002"
+        ]
+      }
+    },
+    "x3000c0s3b0n0": {
+      "Parent": "x3000c0s3b0",
+      "Xname": "x3000c0s3b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Master",
+        "Aliases": [
+          "ncn-m003"
+        ]
+      }
+    },
+    "x3000c0s4b0n0": {
+      "Parent": "x3000c0s4b0",
+      "Xname": "x3000c0s4b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Worker",
+        "Aliases": [
+          "ncn-w001"
+        ]
+      }
+    },
+    "x3000c0s5b0n0": {
+      "Parent": "x3000c0s5b0",
+      "Xname": "x3000c0s5b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Worker",
+        "Aliases": [
+          "ncn-w002"
+        ]
+      }
+    },
+    "x3000c0s6b0n0": {
+      "Parent": "x3000c0s6b0",
+      "Xname": "x3000c0s6b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Worker",
+        "Aliases": [
+          "ncn-w003"
+        ]
+      }
+    },
+    "x3000c0s7b0n0": {
+      "Parent": "x3000c0s7b0",
+      "Xname": "x3000c0s7b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Storage",
+        "Aliases": [
+          "ncn-s001"
+        ]
+      }
+    },
+    "x3000c0s8b0n0": {
+      "Parent": "x3000c0s8b0",
+      "Xname": "x3000c0s8b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Storage",
+        "Aliases": [
+          "ncn-s002"
+        ]
+      }
+    },
+    "x3000c0s9b0n0": {
+      "Parent": "x3000c0s9b0",
+      "Xname": "x3000c0s9b0n0",
+      "Type": "comptype_node",
+      "Class": "River",
+      "TypeString": "Node",
+      "ExtraProperties": {
+        "Role": "Management",
+        "SubRole": "Storage",
+        "Aliases": [
+          "ncn-s003"
+        ]
+      }
+    },
+    "x3000c0w13": {
+      "Parent": "x3000c0",
+      "Xname": "x3000c0w13",
+      "Type": "comptype_mgmt_switch",
+      "Class": "River",
+      "TypeString": "MgmtSwitch",
+      "ExtraProperties": {
+        "Brand": "Dell",
+        "Model": "S3048-ON",
+        "SNMPAuthPassword": "vault://hms-creds/x3000c0w13",
+        "SNMPAuthProtocol": "MD5",
+        "SNMPPrivPassword": "vault://hms-creds/x3000c0w13",
+        "SNMPPrivProtocol": "DES",
+        "SNMPUsername": "testuser",
+        "Aliases": [
+          "sw-leaf-bmc-001"
+        ]
+      }
+    },
+    "x3000c0w13j25": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j25",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s4b0"
+        ],
+        "VendorName": "ethernet1/1/25"
+      }
+    },
+    "x3000c0w13j26": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j26",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s2b0"
+        ],
+        "VendorName": "ethernet1/1/26"
+      }
+    },
+    "x3000c0w13j27": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j27",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s3b0"
+        ],
+        "VendorName": "ethernet1/1/27"
+      }
+    },
+    "x3000c0w13j28": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j28",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s5b0"
+        ],
+        "VendorName": "ethernet1/1/28"
+      }
+    },
+    "x3000c0w13j29": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j29",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s6b0"
+        ],
+        "VendorName": "ethernet1/1/29"
+      }
+    },
+    "x3000c0w13j30": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j30",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s7b0"
+        ],
+        "VendorName": "ethernet1/1/30"
+      }
+    },
+    "x3000c0w13j31": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j31",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s8b0"
+        ],
+        "VendorName": "ethernet1/1/31"
+      }
+    },
+    "x3000c0w13j32": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j32",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s9b0"
+        ],
+        "VendorName": "ethernet1/1/32"
+      }
+    },
+    "x3000c0w13j33": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j33",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s10b1"
+        ],
+        "VendorName": "ethernet1/1/33"
+      }
+    },
+    "x3000c0w13j34": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j34",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s10b2"
+        ],
+        "VendorName": "ethernet1/1/34"
+      }
+    },
+    "x3000c0w13j35": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j35",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s10b3"
+        ],
+        "VendorName": "ethernet1/1/35"
+      }
+    },
+    "x3000c0w13j36": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j36",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s10b4"
+        ],
+        "VendorName": "ethernet1/1/36"
+      }
+    },
+    "x3000c0w13j39": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j39",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0r16b0"
+        ],
+        "VendorName": "ethernet1/1/39"
+      }
+    },
+    "x3000c0w13j40": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j40",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000c0s23b0"
+        ],
+        "VendorName": "ethernet1/1/40"
+      }
+    },
+    "x3000c0w13j48": {
+      "Parent": "x3000c0w13",
+      "Xname": "x3000c0w13j48",
+      "Type": "comptype_mgmt_switch_connector",
+      "Class": "River",
+      "TypeString": "MgmtSwitchConnector",
+      "ExtraProperties": {
+        "NodeNics": [
+          "x3000m0"
+        ],
+        "VendorName": "ethernet1/1/48"
+      }
+    },
+    "x3000c0w14": {
+      "Parent": "x3000c0",
+      "Xname": "x3000c0w14",
+      "Type": "comptype_mgmt_switch",
+      "Class": "River",
+      "TypeString": "MgmtSwitch",
+      "ExtraProperties": {
+        "Brand": "Dell",
+        "Model": "S3048-ON",
+        "SNMPAuthPassword": "vault://hms-creds/x3000c0w14",
+        "SNMPAuthProtocol": "MD5",
+        "SNMPPrivPassword": "vault://hms-creds/x3000c0w14",
+        "SNMPPrivProtocol": "DES",
+        "SNMPUsername": "testuser",
+        "Aliases": [
+          "sw-leaf-bmc-002"
+        ]
+      }
+    },
+    "x3000m0": {
+      "Parent": "x3000",
+      "Xname": "x3000m0",
+      "Type": "comptype_cab_pdu_controller",
+      "Class": "River",
+      "TypeString": "CabinetPDUController"
+    }
+  },
+  "Networks": null
+}

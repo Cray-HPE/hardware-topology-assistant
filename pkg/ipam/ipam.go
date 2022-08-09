@@ -10,6 +10,25 @@ import (
 	"inet.af/netaddr"
 )
 
+func ExistingIPAddresses(slsSubnet sls_common.IPV4Subnet) (*netaddr.IPSet, error) {
+	var existingIPAddresses netaddr.IPSetBuilder
+	gatewayIP, ok := netaddr.FromStdIP(slsSubnet.Gateway)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse gateway IP (%v)", slsSubnet.Gateway)
+	}
+	existingIPAddresses.Add(gatewayIP)
+
+	for _, ipReservation := range slsSubnet.IPReservations {
+		ip, ok := netaddr.FromStdIP(ipReservation.IPAddress)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse IPReservation IP (%v)", ipReservation.IPAddress)
+		}
+		existingIPAddresses.Add(ip)
+	}
+
+	return existingIPAddresses.IPSet()
+}
+
 func FindNextAvailableIP(slsSubnet sls_common.IPV4Subnet) (netaddr.IP, error) {
 	subnet, err := netaddr.ParseIPPrefix(slsSubnet.CIDR)
 	if err != nil {
@@ -20,22 +39,7 @@ func FindNextAvailableIP(slsSubnet sls_common.IPV4Subnet) (netaddr.IP, error) {
 	// fmt.Println(subnet)
 	// fmt.Println(subnet.Range())
 
-	var existingIPAddresses netaddr.IPSetBuilder
-	gatewayIP, ok := netaddr.FromStdIP(slsSubnet.Gateway)
-	if !ok {
-		return netaddr.IP{}, fmt.Errorf("failed to parse gateway IP (%v)", slsSubnet.Gateway)
-	}
-	existingIPAddresses.Add(gatewayIP)
-
-	for _, ipReservation := range slsSubnet.IPReservations {
-		ip, ok := netaddr.FromStdIP(ipReservation.IPAddress)
-		if !ok {
-			return netaddr.IP{}, fmt.Errorf("failed to parse IPReservation IP (%v)", ipReservation.IPAddress)
-		}
-		existingIPAddresses.Add(ip)
-	}
-
-	existingIPAddressesSet, err := existingIPAddresses.IPSet()
+	existingIPAddressesSet, err := ExistingIPAddresses(slsSubnet)
 	if err != nil {
 		return netaddr.IP{}, err
 	}
@@ -244,7 +248,33 @@ func AllocateIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias strin
 func FreeIPsInStaticRange(slsSubnet sls_common.IPV4Subnet) (uint32, error) {
 	// TODO add the functionality for this
 	// Probably need to steal some of the logic for allocate IP. Need to share the logic between the two
-	return 0, nil
+
+	subnet, err := netaddr.ParseIPPrefix(slsSubnet.CIDR)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse subnet CIDR (%v): %w", slsSubnet.CIDR, err)
+	}
+
+	existingIPAddressesSet, err := ExistingIPAddresses(slsSubnet)
+	if err != nil {
+		return 0, err
+	}
+
+	startingIP := subnet.Range().From().Next() // Start at the first usable available IP in the subnet.
+	endingIP, ok := netaddr.FromStdIP(slsSubnet.DHCPStart)
+	if !ok {
+		return 0, fmt.Errorf("failed to convert DHCP Start IP address to netaddr struct")
+	}
+
+	var count uint32
+	for ip := startingIP; ip.Less(endingIP); ip = ip.Next() {
+		if existingIPAddressesSet.Contains(ip) {
+			// IP address currently in use
+			continue
+		}
+		count++
+	}
+
+	return count, nil
 }
 
 func ExpandSubnetStaticRange(slsSubnet *sls_common.IPV4Subnet, count uint32) error {

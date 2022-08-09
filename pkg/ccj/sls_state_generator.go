@@ -21,7 +21,7 @@ var vendorBrandMapping = map[string]string{
 }
 
 func extractNumber(numberRaw string) (int, error) {
-	matches := regexp.MustCompile(`(\d+)`).FindStringSubmatch(numberRaw)
+	matches := regexp.MustCompile(`(\d+)`).FindStringSubmatch(strings.ToLower(numberRaw))
 
 	if len(matches) < 2 {
 		return 0, fmt.Errorf("unexpected number of matches %d expected 2", len(matches))
@@ -249,6 +249,10 @@ func buildSLSCMC(location Location) (sls_common.GenericHardware, error) {
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, nil), nil
 }
 
+// BuildNodeExtraProperties will attempt to build up all of the known extra properties form a Node present in a CCJ.
+// Limiitations the following information is not populated:
+// - Management NCN NID
+// - Application Node Subrole and Alias
 func BuildNodeExtraProperties(topologyNode TopologyNode) (extraProperties sls_common.ComptypeNode, err error) {
 	if topologyNode.Type != "server" && topologyNode.Type != "node" {
 		return sls_common.ComptypeNode{}, fmt.Errorf("unexpected topology node type (%s) expected (server or node)", topologyNode.Type)
@@ -283,6 +287,7 @@ func BuildNodeExtraProperties(topologyNode TopologyNode) (extraProperties sls_co
 	} else {
 		// Must be an application node
 		// Application nodes don't have a NID due to reasons.
+		// The applications subrole gets filled in later
 		extraProperties.Role = "Application"
 	}
 
@@ -356,6 +361,12 @@ func BuildNodeXname(topologyNode TopologyNode, paddle Paddle, extraProperties sl
 			return xnames.Node{}, fmt.Errorf("are zero NIDs even supported? I don't think so...")
 		}
 		bmcOrdinal = ((extraProperties.NID - 1) % 4) + 1
+	} else if strings.ToLower(topologyNode.Location.SubLocation) == "l" {
+		// This is the left side node in a dual node chassis
+		bmcOrdinal = 1
+	} else if strings.ToLower(topologyNode.Location.SubLocation) == "r" {
+		// This is the left side node in a dual node chassis
+		bmcOrdinal = 2
 	}
 
 	// TODO Is this ia dual node chassis?
@@ -479,7 +490,8 @@ func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware
 		slsBrand = brand
 	} else if topologyNode.Architecture == "customer_edge_router" {
 		// TODO This information is missing from the paddle, but is present in SLS via switch_metadata.csv
-		slsBrand = "Arista" // TODO HACK right now I think we only support Arista edge routers
+		slsBrand = "Arista"     // TODO HACK right now I think we only support Arista edge routers
+		topologyNode.Model = "" // TODO there is no data source for this, but this is a nice to have field inside of SLS.
 	} else {
 		return sls_common.GenericHardware{}, fmt.Errorf("unknown topology node vendor: (%s)", topologyNode.Vendor)
 	}
@@ -614,7 +626,7 @@ func BuildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 		// TODO we don't support this for BMCs
 		fallthrough
 	default:
-		return sls_common.GenericHardware{}, fmt.Errorf("unexpected switch vendor (%s)", topologyNode.Vendor)
+		return sls_common.GenericHardware{}, fmt.Errorf("unexpected switch vendor (%s)", destinationTopologyNode.Vendor)
 	}
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, sls_common.ComptypeMgmtSwitchConnector{
 		NodeNics: []string{
