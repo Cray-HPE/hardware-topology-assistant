@@ -40,7 +40,7 @@ func (cl CabinetLookup) CabinetExists(wantedCabinet string) bool {
 func (cl CabinetLookup) CabinetClass(wantedCabinet string) (sls_common.CabinetType, error) {
 	cabinetKind, err := cl.CabinetKind(wantedCabinet)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return cabinetKind.Class()
@@ -61,12 +61,14 @@ func (cl CabinetLookup) CanCabinetContainAirCooledHardware(cabinetXname string) 
 		// River Cabinets can of course hold air-cooled hardware
 		return true, nil
 	} else if cabinetClass == sls_common.ClassHill {
+		// TODO Currently don't support adding EX2500 cabinets of any kind
+		//
 		// if cabinetKind == csi.CabinetKindEX2500 {
 		// 	if len(cabinetTemplate.AirCooledChassisList) >= 1 {
 		// 		// This is an EX2500 cabinet with a air cooled chassis in it
 		// 		return true, nil
 		// 	}
-
+		//
 		// 	// This ia an EX2500 cabinet with no air-cooled chassis
 		// 	return false, fmt.Errorf("hill cabinet (EX2500) %s does not contain any air-cooled chassis", cabinetXname)
 		// }
@@ -95,6 +97,7 @@ func (cl *CabinetLookup) DetermineRiverChassis(cabinet xnames.Cabinet) (xnames.C
 	// }
 
 	chassisInteger := 0
+	// TODO Currently don't support adding EX2500 cabinets of any kind
 	// TODO need a source of information for this
 	// if class == sls_common.ClassHill {
 	// 	// This is a EX2500 cabinet with a air cooled chassis

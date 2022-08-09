@@ -10,6 +10,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
+	github.com/stretchr/testify v1.7.1
 	gopkg.in/yaml.v2 v2.4.0
 	inet.af/netaddr v0.0.0-20220617031823-097006376321
 )
@@ -21,6 +22,7 @@ require (
 	github.com/Cray-HPE/hms-securestorage v1.12.2 // indirect
 	github.com/Cray-HPE/hms-shcd-parser v1.8.0 // indirect
 	github.com/Cray-HPE/hms-smd v1.51.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gocarina/gocsv v0.0.0-20200925213129-04be9ee2e1a2 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
@@ -40,6 +42,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
 	github.com/pierrec/lz4 v2.4.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect

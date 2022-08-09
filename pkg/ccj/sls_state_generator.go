@@ -15,9 +15,9 @@ import (
 
 // Paddle Vendor to SLS Brand
 var vendorBrandMapping = map[string]string{
-	"aruba": "Aruba",
-	// TODO Dell
-	// TODO Mellanox
+	"aruba":    "Aruba",
+	"dell":     "Dell",
+	"mellanox": "Mellanox",
 }
 
 func extractNumber(numberRaw string) (int, error) {
@@ -154,17 +154,6 @@ func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup co
 		return buildSLSPDUController(topologyNode.Location)
 	case "slingshot_hsn_switch":
 		return buildSLSSlingshotHSNSwitch(topologyNode.Location)
-	case "river_compute_node":
-		fallthrough
-	case "river_ncn_node_4_port_gigabyte":
-		fallthrough
-	case "river_ncn_node_2_port_gigabyte":
-		fallthrough
-	case "river_ncn_node_2_port":
-		fallthrough
-	case "river_ncn_node_4_port":
-		// All node architecture needs to go through this function
-		return buildSLSNode(topologyNode, paddle, applicationNodeMetadata)
 	case "mountain_compute_leaf": // CDUMgmtSwitch
 		if strings.HasPrefix(topologyNode.Location.Rack, "x") {
 			// This CDU MgmtSwitch is present in a river cabinet.
@@ -182,6 +171,13 @@ func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup co
 		return buildSLSMgmtHLSwitch(topologyNode)
 	case "river_bmc_leaf":
 		return buildSLSMgmtSwitch(topologyNode)
+	default:
+		// There are a lot of architecture types that can be a node, but for SLS we just need to know that it is a server
+		// of some sort.
+		if topologyNode.Type == "node" || topologyNode.Type == "server" {
+			// All node architecture needs to go through this function
+			return buildSLSNode(topologyNode, paddle, applicationNodeMetadata)
+		}
 	}
 
 	return sls_common.GenericHardware{}, fmt.Errorf("unknown architecture type %s", topologyNode.Architecture)
