@@ -140,7 +140,7 @@ func FindNextAvailableSubnet(slsNetwork sls_common.NetworkExtraProperties) (neta
 	return netaddr.IPPrefix{}, fmt.Errorf("network space has been exhausted")
 }
 
-func AllocateCabinetSubnet(slsNetwork sls_common.NetworkExtraProperties, xname xnames.Cabinet, vlanOverride *int16) (sls_common.IPV4Subnet, error) {
+func AllocateCabinetSubnet(networkName string, slsNetwork sls_common.NetworkExtraProperties, xname xnames.Cabinet, vlanOverride *int16) (sls_common.IPV4Subnet, error) {
 	cabinetSubnet, err := FindNextAvailableSubnet(slsNetwork)
 	if err != nil {
 		return sls_common.IPV4Subnet{}, fmt.Errorf("failed to allocate subnet for (%s) in CIDR (%s)", xname.String(), slsNetwork.CIDR)
@@ -161,8 +161,46 @@ func AllocateCabinetSubnet(slsNetwork sls_common.NetworkExtraProperties, xname x
 	} else {
 		// Look at other cabinets in the subnet and pick one.
 		// TODO THIS MIGHT FALL APART WITH LIQUID-COOLED CABINETS AS THOSE CAN BE USER SUPPLIED, but we don't currently support adding this with this tool
+
+		// Determine the current vlans in use by other cabinets
+		vlansInUse := map[int16]bool{}
+		for _, existingSubnet := range slsNetwork.Subnets {
+			vlansInUse[existingSubnet.VlanID] = true
+		}
+
+		// Now lest find the smallest free Vlan!
+		var vlanLow int16 = -1
+		var vlanHigh int16 = -1
+
+		if networkName == "HMN_RVR" {
+			// The following values are defined here in CSI: https://github.com/Cray-HPE/cray-site-init/blob/4ead6fccd0ba0710e7250357f1c3a2525996d293/cmd/init.go#L160
+			vlanLow = 1513
+			vlanHigh = 1769
+		} else if networkName == "NMN_RVR" {
+			// The following values are defined here in CSI: https://github.com/Cray-HPE/cray-site-init/blob/4ead6fccd0ba0710e7250357f1c3a2525996d293/cmd/init.go#L189
+			vlanLow = 1770
+			vlanHigh = 1999
+
+		} else {
+			return sls_common.IPV4Subnet{}, fmt.Errorf("unknown network (%s) unable to allocate vlan for cabinet subnet", networkName)
+		}
+
+		for vlanCandidate := vlanLow; vlanCandidate <= vlanHigh; vlanCandidate++ {
+			if vlansInUse[vlanCandidate] {
+				// currently in use
+				continue
+			}
+
+			vlan = vlanCandidate
+			break
+		}
 	}
-	// TODO make sure vlan is unique
+
+	fmt.Printf("Allocated cabinet vlan! %d\n", vlan)
+
+	if vlan == -1 {
+		return sls_common.IPV4Subnet{}, fmt.Errorf("failed to allocate VLAN for cabinet subnet (%s)", subnetName)
+	}
 
 	// DHCP starts 10 into the subnet
 	dhcpStart, err := AdvanceIP(cabinetSubnet.Range().From(), 10)

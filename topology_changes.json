@@ -168,14 +168,14 @@
             "HMN": {
               "CIDR": "10.106.4.0/22",
               "Gateway": "10.106.4.1",
-              "VLan": -1
+              "VLan": 1771
             }
           },
           "ncn": {
             "HMN": {
               "CIDR": "10.106.4.0/22",
               "Gateway": "10.106.4.1",
-              "VLan": -1
+              "VLan": 1771
             }
           }
         }
@@ -509,8 +509,8 @@
         "10.103.9.0/25"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660148126,
-      "LastUpdatedTime": "2022-08-10 16:15:26.671301 +0000 UTC",
+      "LastUpdated": 1660154334,
+      "LastUpdatedTime": "2022-08-10 17:58:54.589444 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.103.9.0/25",
         "VlanRange": [
@@ -679,8 +679,8 @@
         "10.103.0.0/25"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660148126,
-      "LastUpdatedTime": "2022-08-10 16:15:26.671301 +0000 UTC",
+      "LastUpdated": 1660154334,
+      "LastUpdatedTime": "2022-08-10 17:58:54.589444 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.103.0.0/25",
         "VlanRange": [
@@ -938,8 +938,8 @@
         "10.254.0.0/17"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660148126,
-      "LastUpdatedTime": "2022-08-10 16:15:26.671301 +0000 UTC",
+      "LastUpdated": 1660154334,
+      "LastUpdatedTime": "2022-08-10 17:58:54.589444 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.254.0.0/17",
         "VlanRange": [
@@ -1255,8 +1255,8 @@
         "10.107.0.0/17"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660148126,
-      "LastUpdatedTime": "2022-08-10 16:15:26.671301 +0000 UTC",
+      "LastUpdated": 1660154334,
+      "LastUpdatedTime": "2022-08-10 17:58:54.589444 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.107.0.0/17",
         "VlanRange": [
@@ -1278,7 +1278,7 @@
             "FullName": "",
             "CIDR": "10.107.4.0/22",
             "Name": "cabinet_3001",
-            "VlanID": -1,
+            "VlanID": 1514,
             "Gateway": "10.107.4.1",
             "DHCPStart": "10.107.4.10",
             "DHCPEnd": "10.107.7.254"
@@ -1293,8 +1293,8 @@
         "10.1.1.0/16"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660148126,
-      "LastUpdatedTime": "2022-08-10 16:15:26.671301 +0000 UTC",
+      "LastUpdated": 1660154334,
+      "LastUpdatedTime": "2022-08-10 17:58:54.589444 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.1.1.0/16",
         "VlanRange": [
@@ -1523,8 +1523,8 @@
         "10.252.0.0/17"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660148126,
-      "LastUpdatedTime": "2022-08-10 16:15:26.671301 +0000 UTC",
+      "LastUpdated": 1660154334,
+      "LastUpdatedTime": "2022-08-10 17:58:54.589444 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.252.0.0/17",
         "VlanRange": [
@@ -1850,8 +1850,8 @@
         "10.106.0.0/17"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660148126,
-      "LastUpdatedTime": "2022-08-10 16:15:26.671301 +0000 UTC",
+      "LastUpdated": 1660154334,
+      "LastUpdatedTime": "2022-08-10 17:58:54.589444 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.106.0.0/17",
         "VlanRange": [
@@ -1873,7 +1873,7 @@
             "FullName": "",
             "CIDR": "10.106.4.0/22",
             "Name": "cabinet_3001",
-            "VlanID": -1,
+            "VlanID": 1771,
             "Gateway": "10.106.4.1",
             "DHCPStart": "10.106.4.10",
             "DHCPEnd": "10.106.7.254"
@@ -1889,7 +1889,7 @@
         "FullName": "",
         "CIDR": "10.107.4.0/22",
         "Name": "cabinet_3001",
-        "VlanID": -1,
+        "VlanID": 1514,
         "Gateway": "10.107.4.1",
         "DHCPStart": "10.107.4.10",
         "DHCPEnd": "10.107.7.254"
@@ -1901,7 +1901,7 @@
         "FullName": "",
         "CIDR": "10.106.4.0/22",
         "Name": "cabinet_3001",
-        "VlanID": -1,
+        "VlanID": 1771,
         "Gateway": "10.106.4.1",
         "DHCPStart": "10.106.4.10",
         "DHCPEnd": "10.106.7.254"
