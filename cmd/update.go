@@ -166,25 +166,6 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		// {
-		// 	// Debug
-		// 	raw, err := yaml.Marshal(currentApplicationNodeMetadata)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		//
-		// 	fmt.Println("Current Application node metadata")
-		// 	fmt.Println(string(raw))
-		//
-		// 	raw, err = yaml.Marshal(applicationNodeMetadata)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		//
-		// 	fmt.Println("Expected Application node metadata")
-		// 	fmt.Println(string(raw))
-		// }
-
 		// At this point we can detect if any application nodes are missing required data
 		// TODO Should we verify all SubRoles are valid against HSM?
 		foundFixMes := false
@@ -383,48 +364,9 @@ to quickly create a Cobra application.`,
 				log.Printf("Cabinet routes for %s in BSS Global boot parameters are out of date\n", managementNCN.Xname)
 				managementNCNBootParams[managementNCN.Xname].CloudInit.UserData["write_files"] = expectedWriteFiles
 				modifiedManagementNCNBootParams[managementNCN.Xname] = true
-
-				// {
-				// 	// Expected Hardware json
-				// 	expected, err := json.Marshal(expectedWriteFiles)
-				// 	if err != nil {
-				// 		panic(err)
-				// 	}
-				// 	fmt.Printf("  - Expected: %s\n", string(expected))
-
-				// 	// Actual Hardware json
-				// 	current, err := json.Marshal(currentWriteFiles)
-				// 	if err != nil {
-				// 		panic(err)
-				// 	}
-				// 	fmt.Printf("  - Actual:   %s\n", string(current))
-				// }
 			}
 
 		}
-
-		// {
-		// 	//
-		// 	// Debug stuff
-		// 	//
-		// 	fmt.Printf("%T - %T\n", expectedGlobalHostRecords, currentGlobalHostRecords)
-		// 	fmt.Printf("%d - %d\n", len(expectedGlobalHostRecords), len(currentGlobalHostRecords))
-		//
-		// 	expectedGlobalHostRecordsRaw, err := json.MarshalIndent(expectedGlobalHostRecords, "", "  ")
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		//
-		// 	ioutil.WriteFile("bss_global_host_records_expected.json", expectedGlobalHostRecordsRaw, 0600)
-		//
-		// 	currentGlobalHostRecordsRaw, err := json.MarshalIndent(currentGlobalHostRecords, "", "  ")
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		//
-		// 	ioutil.WriteFile("bss_global_host_records_current.json", currentGlobalHostRecordsRaw, 0600)
-		//
-		// }
 
 		//
 		// Perform changes to SLS/HSM/BSS on the system to reflect the updated state.

@@ -100,24 +100,6 @@ func HardwareUnion(a, b sls_common.SLSState) (identicalHardware []sls_common.Gen
 		}
 		extraPropertiesB = stripIpInformationFromHardware(extraPropertiesB)
 
-		// // Expected Hardware json
-		// hardwareRawA, err := json.Marshal(extraPropertiesA)
-		// if err != nil {
-		// 	panic(err)
-		// }
-		//
-		// // Actual Hardware json
-		// hardwareRawB, err := json.Marshal(extraPropertiesB)
-		// if err != nil {
-		// 	panic(err)
-		// }
-		//
-		// fmt.Printf("raw    - %T - %T\n", hardwareA.ExtraPropertiesRaw, hardwareB.ExtraPropertiesRaw)
-		// fmt.Printf("decode - %T - %T\n", extraPropertiesA, extraPropertiesB)
-		// fmt.Printf("  - A: %s\n", string(hardwareRawA))
-		// fmt.Printf("  - B: %s\n", string(hardwareRawB))
-		// fmt.Println()
-
 		if !reflect.DeepEqual(extraPropertiesA, extraPropertiesB) {
 			differingContents = append(differingContents, hardwarePair)
 			continue

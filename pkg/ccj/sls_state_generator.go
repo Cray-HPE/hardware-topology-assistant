@@ -40,9 +40,6 @@ func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLook
 	// Iterate over the paddle file to build of SLS data
 	allHardware := map[string]sls_common.GenericHardware{}
 	for _, topologyNode := range paddle.Topology {
-		// Debug
-		// fmt.Println(topologyNode.Architecture, topologyNode.CommonName)
-
 		//
 		// Build the SLS hardware representation
 		//
