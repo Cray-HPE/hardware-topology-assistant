@@ -2,6 +2,7 @@ package ccj
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -590,7 +591,7 @@ func BuildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 
 	destinationPorts := topologyNode.FindPorts(slot)
 	if len(destinationPorts) == 0 {
-		fmt.Printf("%s (%s) does not have a connection to the HMN\n", hardware.Xname, topologyNode.CommonName)
+		log.Printf("%s (%s) does not have a connection to the HMN\n", hardware.Xname, topologyNode.CommonName)
 		return sls_common.GenericHardware{}, nil
 	} else if len(destinationPorts) != 1 {
 		return sls_common.GenericHardware{}, fmt.Errorf("unexpected number of '%s' ports found (%v) expected 1", slot, len(destinationPorts))

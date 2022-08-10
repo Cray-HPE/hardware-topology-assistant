@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
@@ -17,7 +18,7 @@ import (
 
 func main() {
 	if len(os.Args) != 3 {
-		panic("Incorrect number of CLI args provided")
+		log.Fatal("Incorrect number of CLI args provided")
 	}
 
 	// Read in the paddle file
@@ -42,7 +43,7 @@ func main() {
 	}
 	if !supportedArchitectures[paddle.Architecture] {
 		err := fmt.Errorf("unsupported paddle architecture (%v)", paddle.Architecture)
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Determine the cabinet in cabinet lookup
@@ -55,11 +56,11 @@ func main() {
 	{
 		jsonRaw, err := json.MarshalIndent(cabinetLookup, "", "  ")
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
-		fmt.Println("DEBUG: Cabinet lookup")
-		fmt.Println(string(jsonRaw))
+		log.Println("DEBUG: Cabinet lookup")
+		log.Println(string(jsonRaw))
 	}
 
 	// Read in application_node_metadata.yaml

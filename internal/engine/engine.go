@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
@@ -76,8 +77,8 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 			return nil, err
 		}
 
-		fmt.Println("Cabinet lookup:")
-		fmt.Println(string(cabinetLookupRaw))
+		log.Println("Cabinet lookup:")
+		log.Println(string(cabinetLookupRaw))
 	}
 
 	// Build up a list of current switch alias overrides
@@ -209,7 +210,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 					return nil, fmt.Errorf("unable to allocate subnet for cabinet (%s) in network (%s)", hardware.Xname, networkName)
 				}
 
-				fmt.Printf("Allocated subnet %s in network %s for %s\n", subnet.CIDR, networkName, hardware.Xname)
+				log.Printf("Allocated subnet %s in network %s for %s\n", subnet.CIDR, networkName, hardware.Xname)
 				subnetsAdded = append(subnetsAdded, SubnetChange{
 					NetworkName: networkName,
 					Subnet:      subnet,
@@ -266,7 +267,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 			}
 
 			// Allocation IP for Switch
-			fmt.Printf("%s (%s): Allocating IPs for switch\n", hardware.Xname, aliases[0])
+			log.Printf("%s (%s): Allocating IPs for switch\n", hardware.Xname, aliases[0])
 
 			// TODO if CSM 1.0 is going to be supported at some point with this tool, the CMN network needs to become optional
 			for _, networkName := range []string{"HMN", "NMN", "MTL", "CMN"} {
@@ -294,7 +295,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 					return nil, fmt.Errorf("unable to allocate IP for switch (%s) in network (%s): %w", xname.String(), networkName, err)
 				}
 
-				fmt.Printf("%s (%s): Allocated IP %s in subnet network_hardware in network %s\n", hardware.Xname, aliases[0], ipReservation.IPAddress.String(), networkName)
+				log.Printf("%s (%s): Allocated IP %s in subnet network_hardware in network %s\n", hardware.Xname, aliases[0], ipReservation.IPAddress.String(), networkName)
 				ipReservationsAdded = append(ipReservationsAdded, IPReservationChange{
 					NetworkName:    networkName,
 					SubnetName:     "network_hardware",
@@ -387,7 +388,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 			if !present {
 				continue
 			}
-			fmt.Printf("Checking to see if the static IP address range for the bootstrap_dhcp subnet in %s has enough room for added UAN(s).\n", networkName)
+			log.Printf("Checking to see if the static IP address range for the bootstrap_dhcp subnet in %s has enough room for added UAN(s).\n", networkName)
 
 			// Retrieve the subnet
 			slsSubnet, slsSubnetIndex, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
@@ -403,19 +404,19 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 			var expandStaticRangeBy uint32
 			if freeIPCount < uint32(len(uans)) {
 				expandStaticRangeBy = uint32(len(uans)) - freeIPCount
-				fmt.Printf("The bootstrap_dhcp subnet in %s network has %d IP addresses available, will be expanded by %d hosts.\n", networkName, freeIPCount, expandStaticRangeBy)
+				log.Printf("The bootstrap_dhcp subnet in %s network has %d IP addresses available, will be expanded by %d hosts.\n", networkName, freeIPCount, expandStaticRangeBy)
 
 				// Okay, lets see if we can expand the subnet by the number of UANs being added to the system
 				if err := ipam.ExpandSubnetStaticRange(&slsSubnet, uint32(len(uans))); err != nil {
 					return nil, fmt.Errorf("unable to expand the static IP address range in the bootstrap_dhcp subnet in (%s) network: %w", networkName, err)
 				}
-				fmt.Printf("The bootstrap_dhcp subnet in %s network has been expanded by %d IP addresses,\n", networkName, expandStaticRangeBy)
+				log.Printf("The bootstrap_dhcp subnet in %s network has been expanded by %d IP addresses,\n", networkName, expandStaticRangeBy)
 
 				// Update the subnet with the new DHCP range
 				networkExtraProperties.Subnets[slsSubnetIndex] = slsSubnet
 				modifiedNetworks[networkName] = true
 			} else {
-				fmt.Printf("The bootstrap_dhcp subnet in %s network has %d IP addresses available.\n", networkName, freeIPCount)
+				log.Printf("The bootstrap_dhcp subnet in %s network has %d IP addresses available.\n", networkName, freeIPCount)
 			}
 
 		}
@@ -423,7 +424,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 
 	// Allocate IP addresses
 	for _, uan := range uans {
-		fmt.Printf("%s (%s): Allocating IPs For UAN\n", uan.xname, uan.alias)
+		log.Printf("%s (%s): Allocating IPs For UAN\n", uan.xname, uan.alias)
 
 		for _, networkName := range []string{"CAN", "CHN"} {
 			// Only allocate an IP for the UAN if the network exists
@@ -433,7 +434,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 			}
 
 			// Debug
-			//fmt.Printf("%s (%s): Allocating IP on the %s network\n", uan.xname, uan.alias, networkName)
+			//log.Printf("%s (%s): Allocating IP on the %s network\n", uan.xname, uan.alias, networkName)
 
 			// Retrieve the subnet
 			slsSubnet, slsSubnetIndex, err := networkExtraProperties.LookupSubnet("bootstrap_dhcp")
@@ -458,7 +459,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 				ChangedByXname: uan.xname,
 			})
 
-			fmt.Printf("%s (%s): Allocated IP %s on the %s network\n", uan.xname, uan.alias, ipReservation.IPAddress, networkName)
+			log.Printf("%s (%s): Allocated IP %s on the %s network\n", uan.xname, uan.alias, ipReservation.IPAddress, networkName)
 
 			// Push in the network IP Reservation into the subnet
 			slsSubnet.IPReservations = append(slsSubnet.IPReservations, ipReservation)
@@ -494,20 +495,20 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 }
 
 func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardwareAdded, identicalHardware []sls_common.GenericHardware, hardwareWithDifferingValues []sls.GenericHardwarePair) {
-	fmt.Println("Identical hardware between current and expected states")
+	log.Println("Identical hardware between current and expected states")
 	if len(identicalHardware) == 0 {
-		fmt.Println("  None")
+		log.Println("  None")
 	}
 	for _, pair := range identicalHardware {
-		fmt.Printf("  %s\n", pair.Xname)
+		log.Printf("  %s\n", pair.Xname)
 	}
 
-	fmt.Println("Common hardware between current and expected states with differing class or extra properties")
+	log.Println("Common hardware between current and expected states with differing class or extra properties")
 	if len(hardwareWithDifferingValues) == 0 {
-		fmt.Println("  None")
+		log.Println("  None")
 	}
 	for _, pair := range hardwareWithDifferingValues {
-		fmt.Printf("  %s\n", pair.Xname)
+		log.Printf("  %s\n", pair.Xname)
 
 		// Expected Hardware json
 		pair.HardwareA.LastUpdated = 0
@@ -516,7 +517,7 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("  - Expected: %s\n", string(hardwareRaw))
+		log.Printf("  - Expected: %s\n", string(hardwareRaw))
 
 		// Actual Hardware json
 		pair.HardwareB.LastUpdated = 0
@@ -525,12 +526,12 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("  - Actual:   %s\n", string(hardwareRaw))
+		log.Printf("  - Actual:   %s\n", string(hardwareRaw))
 	}
 
-	fmt.Println("Hardware added to the system")
+	log.Println("Hardware added to the system")
 	if len(hardwareAdded) == 0 {
-		fmt.Println("  None")
+		log.Println("  None")
 	}
 	for _, hardware := range hardwareAdded {
 		hardwareRaw, err := json.Marshal(hardware)
@@ -538,13 +539,13 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 			panic(err)
 		}
 
-		fmt.Printf("  %s\n", hardware.Xname)
-		fmt.Printf("  - %s\n", string(hardwareRaw))
+		log.Printf("  %s\n", hardware.Xname)
+		log.Printf("  - %s\n", string(hardwareRaw))
 	}
 
-	fmt.Println("Hardware removed from system")
+	log.Println("Hardware removed from system")
 	if len(hardwareRemoved) == 0 {
-		fmt.Println("  None")
+		log.Println("  None")
 	}
 	for _, hardware := range hardwareRemoved {
 		hardwareRaw, err := json.Marshal(hardware)
@@ -552,11 +553,11 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 			panic(err)
 		}
 
-		fmt.Printf("  %s\n", hardware.Xname)
-		fmt.Printf("  - %s\n", string(hardwareRaw))
+		log.Printf("  %s\n", hardware.Xname)
+		log.Printf("  - %s\n", string(hardwareRaw))
 	}
 
-	fmt.Println()
+	log.Println()
 }
 
 func (te *TopologyEngine) determineCabinetNetwork(networkPrefix string, class sls_common.CabinetType) (string, error) {

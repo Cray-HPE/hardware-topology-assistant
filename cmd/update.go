@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -63,11 +64,11 @@ to quickly create a Cobra application.`,
 		bssURL := v.GetString("bss-url")
 		var bssClient *bss.BSSClient
 		if bssURL != "" {
-			fmt.Printf("Using BSS at %s\n", bssURL)
+			log.Printf("Using BSS at %s\n", bssURL)
 
 			bssClient = bss.NewBSSClient(bssURL, httpClient.StandardClient(), "todo_token")
 		} else {
-			fmt.Println("Connection to BSS disabled")
+			log.Println("Connection to BSS disabled")
 		}
 
 		// Setup HSM client
@@ -80,7 +81,7 @@ to quickly create a Cobra application.`,
 		// Parse input files
 		//
 		ccjFile := args[0]
-		fmt.Printf("Using CCJ file at %s\n", ccjFile)
+		log.Printf("Using CCJ file at %s\n", ccjFile)
 
 		// Read in the paddle file
 		paddleRaw, err := ioutil.ReadFile(ccjFile)
@@ -100,6 +101,7 @@ to quickly create a Cobra application.`,
 		supportedArchitectures := map[string]bool{
 			"network_v2_tds": true,
 			"network_v2":     true,
+			"network_v1":     true,
 		}
 		if !supportedArchitectures[paddle.Architecture] {
 			err := fmt.Errorf("unsupported paddle architecture (%v)", paddle.Architecture)
@@ -111,59 +113,56 @@ to quickly create a Cobra application.`,
 		applicationNodeMetadataFile := v.GetString("application-node-metadata")
 		var applicationNodeMetadata configs.ApplicationNodeMetadataMap
 		if applicationNodeMetadataFile == "" {
-			fmt.Printf("No application node metadata file provided.\n")
+			log.Printf("No application node metadata file provided.\n")
 		} else {
-			fmt.Printf("Using application node metadata file at %s\n", applicationNodeMetadataFile)
+			log.Printf("Using application node metadata file at %s\n", applicationNodeMetadataFile)
 			applicationNodeMetadataRaw, err := ioutil.ReadFile(applicationNodeMetadataFile)
 			if err != nil {
-				panic(err) // TODO
+				log.Fatal("Error:", err)
 			}
 
 			if err := yaml.Unmarshal(applicationNodeMetadataRaw, &applicationNodeMetadata); err != nil {
-				panic(err) // TODO
+				log.Fatal("Error:", err)
 			}
 		}
 
 		//
 		// Retrieve current state from the system
 		//
-		fmt.Printf("Retrieving current SLS state from %s\n", currentSLSStateLocation)
+		log.Printf("Retrieving current SLS state from %s\n", currentSLSStateLocation)
 
 		currentSLSState, err := slsClient.GetDumpState(ctx)
 		if err != nil {
-			// TODO give a better error message
-			panic(err)
+			log.Fatal("Error:", err)
 		}
 
 		// TOOD Ideally we could add the initial set of hardware to SLS, if the systems networking information
 		// is known.
 		if len(currentSLSState.Networks) == 0 {
-			fmt.Println("Refusing to continue as the current SLS state does not contain networking information")
-			return
+			log.Fatal("Refusing to continue as the current SLS state does not contain networking information")
 		}
 
 		// Build up the application node metadata for the current state of the system
 		currentApplicationNodeMetadata, err := sls.BuildApplicationNodeMetadata(currentSLSState.Hardware)
 		if err != nil {
-			panic(err)
+			log.Fatal("Error:", err)
 		}
 
 		foundDuplicates := false
 		for alias, xnames := range currentApplicationNodeMetadata.AllAliases() {
 			if len(xnames) > 1 {
-				fmt.Printf("Alias %s is used by multiple application nodes: %s\n", alias, strings.Join(xnames, ","))
+				log.Printf("Alias %s is used by multiple application nodes: %s\n", alias, strings.Join(xnames, ","))
 			}
 		}
 		if foundDuplicates {
-			fmt.Println("The current SLS state contains application nodes that share the same alias. Please reconcile before continuing.")
-			os.Exit(1)
+			log.Fatal("The current SLS state contains application nodes that share the same alias. Please reconcile before continuing.")
 		}
 
 		if applicationNodeMetadataFile == "" {
 			// Build up the application metadata config for the expected state of the system if no file was provided.
 			applicationNodeMetadata, err = ccj.BuildApplicationNodeMetadata(paddle, currentApplicationNodeMetadata)
 			if err != nil {
-				panic(err)
+				log.Fatal("Error:", err)
 			}
 		}
 
@@ -191,13 +190,13 @@ to quickly create a Cobra application.`,
 		foundFixMes := false
 		for xname, metadata := range applicationNodeMetadata {
 			if metadata.SubRole == "~~FIXME~~" {
-				fmt.Printf("Application node %s has SubRole of ~~FIXME~~\n", xname)
+				log.Printf("Application node %s has SubRole of ~~FIXME~~\n", xname)
 				foundFixMes = true
 			}
 
 			for _, alias := range metadata.Aliases {
 				if alias == "~~FIXME~~" {
-					fmt.Printf("Application node %s has Alias of ~~FIXME~~\n", xname)
+					log.Printf("Application node %s has Alias of ~~FIXME~~\n", xname)
 					foundFixMes = true
 				}
 			}
@@ -205,10 +204,10 @@ to quickly create a Cobra application.`,
 		if foundFixMes {
 			// TODO Rephrase
 			// TODO the summary wording if a an application node metadata file is needed could be improved
-			fmt.Println()
-			fmt.Println("New Application nodes are being added to the system which requires additional metadata to be provided.")
-			fmt.Println("Please fill in all of the ~~FIXME~~ values in the application node metadata file.")
-			fmt.Println()
+			log.Println()
+			log.Println("New Application nodes are being added to the system which requires additional metadata to be provided.")
+			log.Println("Please fill in all of the ~~FIXME~~ values in the application node metadata file.")
+			log.Println()
 
 			if applicationNodeMetadataFile == "" {
 				// Since no application node metadata file was provided and required information is not present,
@@ -217,22 +216,21 @@ to quickly create a Cobra application.`,
 
 				// Check to see if the file exists
 				if _, err := os.Stat(applicationNodeMetadataFile); err == nil {
-					fmt.Printf("Add --application-node-metadata=%s to the command line arguments and try again.\n", applicationNodeMetadataFile)
-					fmt.Printf("Error %s already exists in the current directory. Refusing to overwrite!\n", applicationNodeMetadataFile)
-					os.Exit(1)
+					log.Printf("Add --application-node-metadata=%s to the command line arguments and try again.\n", applicationNodeMetadataFile)
+					log.Fatalf("Error %s already exists in the current directory. Refusing to overwrite!\n", applicationNodeMetadataFile)
 				}
 
 				// Write it out!
-				fmt.Printf("Application node metadata file is now available at: %s\n", applicationNodeMetadataFile)
-				fmt.Printf("Add --application-node-metadata=%s to the command line arguments and try again.\n", applicationNodeMetadataFile)
+				log.Printf("Application node metadata file is now available at: %s\n", applicationNodeMetadataFile)
+				log.Printf("Add --application-node-metadata=%s to the command line arguments and try again.\n", applicationNodeMetadataFile)
 				applicationNodeMetadataRaw, err := yaml.Marshal(applicationNodeMetadata)
 				if err != nil {
-					panic(err)
+					log.Fatal("Error:", err)
 				}
 
 				err = ioutil.WriteFile(applicationNodeMetadataFile, applicationNodeMetadataRaw, 0600)
 				if err != nil {
-					panic(err)
+					log.Fatal("Error:", err)
 				}
 			}
 
@@ -242,34 +240,33 @@ to quickly create a Cobra application.`,
 		foundDuplicates = false
 		for alias, xnames := range applicationNodeMetadata.AllAliases() {
 			if len(xnames) > 1 {
-				fmt.Printf("Alias %s is used by multiple application nodes: %s\n", alias, strings.Join(xnames, ","))
+				log.Printf("Alias %s is used by multiple application nodes: %s\n", alias, strings.Join(xnames, ","))
 				foundDuplicates = true
 			}
 		}
 		if foundDuplicates {
-			fmt.Println("The proposed SLS state contains application nodes that share the same alias.")
-			fmt.Printf("Verify all application nodes being added to the system have unique aliases defined in %s\n", applicationNodeMetadataFile)
-			os.Exit(1)
+			log.Println("The proposed SLS state contains application nodes that share the same alias.")
+			log.Fatalf("Error found duplicate application node aliases. Verify all application nodes being added to the system have unique aliases defined in %s\n", applicationNodeMetadataFile)
 		}
 
 		// Retrieve BSS data
 		managementNCNs, err := sls.FindManagementNCNs(currentSLSState.Hardware)
 		if err != nil {
-			panic(err)
+			log.Fatal("Error:", err)
 		}
 
-		fmt.Println("Retrieving Global boot parameters from BSS")
+		log.Println("Retrieving Global boot parameters from BSS")
 		bssGlobalBootParameters, err := bssClient.GetBSSBootparametersByName("Global")
 		if err != nil {
-			panic(err)
+			log.Fatal("Error:", err)
 		}
 
 		managementNCNBootParams := map[string]*bssTypes.BootParams{}
 		for _, managementNCN := range managementNCNs {
-			fmt.Printf("Retrieving boot parameters for %s from BSS\n", managementNCN.Xname)
+			log.Printf("Retrieving boot parameters for %s from BSS\n", managementNCN.Xname)
 			bootParams, err := bssClient.GetBSSBootparametersByName(managementNCN.Xname)
 			if err != nil {
-				panic(err)
+				log.Fatal("Error:", err)
 			}
 
 			managementNCNBootParams[managementNCN.Xname] = bootParams
@@ -288,7 +285,7 @@ to quickly create a Cobra application.`,
 
 		topologyChanges, err := topologyEngine.DetermineChanges()
 		if err != nil {
-			panic(err)
+			log.Fatal("Error:", err)
 		}
 
 		// Merge Topology Changes into the current SLS state
@@ -305,7 +302,7 @@ to quickly create a Cobra application.`,
 			//
 			topologyChangesRaw, err := json.MarshalIndent(topologyChanges, "", "  ")
 			if err != nil {
-				panic(err)
+				log.Fatal("Error:", err)
 			}
 
 			ioutil.WriteFile("topology_changes.json", topologyChangesRaw, 0600)
@@ -337,11 +334,11 @@ to quickly create a Cobra application.`,
 
 		var currentGlobalHostRecords bss.HostRecords
 		if err := mapstructure.Decode(bssGlobalBootParameters.CloudInit.MetaData["host_records"], &currentGlobalHostRecords); err != nil {
-			panic(err)
+			log.Fatal("Error:", err)
 		}
 
 		if !reflect.DeepEqual(currentGlobalHostRecords, expectedGlobalHostRecords) {
-			fmt.Println("Host records in BSS Global boot parameters are out of date")
+			log.Println("Host records in BSS Global boot parameters are out of date")
 			bssGlobalBootParameters.CloudInit.MetaData["host_records"] = expectedGlobalHostRecords
 			modifiedGlobalBootParameters = true
 		}
@@ -367,8 +364,7 @@ to quickly create a Cobra application.`,
 				}
 			}
 			if !foundCAN && !foundCHN {
-				err = fmt.Errorf("no CAN or CHN network defined in SLS")
-				panic(err)
+				log.Fatal("Error no CAN or CHN network defined in SLS networks")
 			}
 
 			// IPAM
@@ -384,7 +380,7 @@ to quickly create a Cobra application.`,
 			// says they are equal.
 			// This should be harmless, the cabinet routes may be in a different order. This is due to cabinet routes do not overlap with each other.
 			if !reflect.DeepEqual(expectedWriteFiles, currentWriteFiles) {
-				fmt.Printf("Cabinet routes for %s in BSS Global boot parameters are out of date\n", managementNCN.Xname)
+				log.Printf("Cabinet routes for %s in BSS Global boot parameters are out of date\n", managementNCN.Xname)
 				managementNCNBootParams[managementNCN.Xname].CloudInit.UserData["write_files"] = expectedWriteFiles
 				modifiedManagementNCNBootParams[managementNCN.Xname] = true
 
@@ -436,9 +432,9 @@ to quickly create a Cobra application.`,
 
 		// Add new hardware
 		if len(topologyChanges.HardwareAdded) == 0 {
-			fmt.Println("No hardware added")
+			log.Println("No hardware added")
 		} else {
-			fmt.Printf("Adding new hardware to SLS (count %d)\n", len(topologyChanges.HardwareAdded))
+			log.Printf("Adding new hardware to SLS (count %d)\n", len(topologyChanges.HardwareAdded))
 			for _, hardware := range topologyChanges.HardwareAdded {
 				if slsClient != nil {
 					slsClient.PutHardware(ctx, hardware)
@@ -448,14 +444,14 @@ to quickly create a Cobra application.`,
 
 		// Update modified networks
 		if len(topologyChanges.ModifiedNetworks) == 0 {
-			fmt.Println("No SLS network changes required")
+			log.Println("No SLS network changes required")
 		} else {
-			fmt.Printf("Updating modified networks in SLS (count %d)\n", len(topologyChanges.ModifiedNetworks))
+			log.Printf("Updating modified networks in SLS (count %d)\n", len(topologyChanges.ModifiedNetworks))
 			for _, modifiedNetwork := range topologyChanges.ModifiedNetworks {
 				if slsClient != nil {
 					err := slsClient.PutNetwork(ctx, modifiedNetwork)
 					if err != nil {
-						panic(err)
+						log.Fatal("Error:", err)
 					}
 				}
 			}
@@ -463,12 +459,12 @@ to quickly create a Cobra application.`,
 
 		// Update BSS Global Bootparams
 		if !modifiedGlobalBootParameters {
-			fmt.Println("No BSS Global boot parameters changes required")
+			log.Println("No BSS Global boot parameters changes required")
 		} else {
-			fmt.Println("Updating BSS Global boot parameters")
+			log.Println("Updating BSS Global boot parameters")
 			_, err := bssClient.UploadEntryToBSS(*bssGlobalBootParameters, http.MethodPut)
 			if err != nil {
-				panic(err)
+				log.Fatal("Error:", err)
 			}
 		}
 
@@ -477,13 +473,13 @@ to quickly create a Cobra application.`,
 			xname := managementNCN.Xname
 
 			if !modifiedManagementNCNBootParams[xname] {
-				fmt.Printf("No changes to BSS boot parameters for %s\n", xname)
+				log.Printf("No changes to BSS boot parameters for %s\n", xname)
 				continue
 			}
-			fmt.Printf("Updating BSS boot parameters for %s\n", xname)
+			log.Printf("Updating BSS boot parameters for %s\n", xname)
 			_, err := bssClient.UploadEntryToBSS(*managementNCNBootParams[xname], http.MethodPut)
 			if err != nil {
-				panic(err)
+				log.Fatal("Error:", err)
 			}
 		}
 	},
