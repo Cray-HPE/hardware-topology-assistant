@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
@@ -138,7 +139,9 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 		return nil, err
 	}
 
-	te.displayHardwareComparisonReport(hardwareRemoved, hardwareAdded, identicalHardware, hardwareWithDifferingValues)
+	if err := displayHardwareComparisonReport(hardwareRemoved, hardwareAdded, identicalHardware, hardwareWithDifferingValues); err != nil {
+		return nil, err
+	}
 
 	//
 	// GUARD RAILS - If hardware is removed of has differing values then
@@ -186,7 +189,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 
 			// Allocation of the Cabinet Subnets
 			for _, networkPrefix := range []string{"HMN", "NMN"} {
-				networkName, err := te.determineCabinetNetwork(networkPrefix, hardware.Class)
+				networkName, err := determineCabinetNetwork(networkPrefix, hardware.Class)
 				if err != nil {
 					return nil, err
 				}
@@ -494,15 +497,22 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	}, nil
 }
 
-func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardwareAdded, identicalHardware []sls_common.GenericHardware, hardwareWithDifferingValues []sls.GenericHardwarePair) {
+func displayHardwareComparisonReport(hardwareRemoved, hardwareAdded, identicalHardware []sls_common.GenericHardware, hardwareWithDifferingValues []sls.GenericHardwarePair) error {
+	log.Println()
 	log.Println("Identical hardware between current and expected states")
 	if len(identicalHardware) == 0 {
 		log.Println("  None")
 	}
-	for _, pair := range identicalHardware {
-		log.Printf("  %s\n", pair.Xname)
+	for _, hardware := range identicalHardware {
+		hardwareRaw, err := buildHardwareString(hardware)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("  %-16s - %s\n", hardware.Xname, hardwareRaw)
 	}
 
+	log.Println()
 	log.Println("Common hardware between current and expected states with differing class or extra properties")
 	if len(hardwareWithDifferingValues) == 0 {
 		log.Println("  None")
@@ -513,54 +523,147 @@ func (te *TopologyEngine) displayHardwareComparisonReport(hardwareRemoved, hardw
 		// Expected Hardware json
 		pair.HardwareA.LastUpdated = 0
 		pair.HardwareA.LastUpdatedTime = ""
-		hardwareRaw, err := json.Marshal(pair.HardwareA)
+		hardwareRaw, err := buildHardwareString(pair.HardwareA)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		log.Printf("  - Expected: %s\n", string(hardwareRaw))
+		log.Printf("  - Expected: %-16s\n", hardwareRaw)
 
 		// Actual Hardware json
 		pair.HardwareB.LastUpdated = 0
 		pair.HardwareB.LastUpdatedTime = ""
-		hardwareRaw, err = json.Marshal(pair.HardwareB)
+		hardwareRaw, err = buildHardwareString(pair.HardwareB)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		log.Printf("  - Actual:   %s\n", string(hardwareRaw))
+		log.Printf("  - Actual:   %-16s\n", hardwareRaw)
 	}
 
+	log.Println()
 	log.Println("Hardware added to the system")
 	if len(hardwareAdded) == 0 {
 		log.Println("  None")
 	}
 	for _, hardware := range hardwareAdded {
-		hardwareRaw, err := json.Marshal(hardware)
+		hardwareRaw, err := buildHardwareString(hardware)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
-		log.Printf("  %s\n", hardware.Xname)
-		log.Printf("  - %s\n", string(hardwareRaw))
+		log.Printf("  %-16s - %s\n", hardware.Xname, hardwareRaw)
 	}
 
+	log.Println()
 	log.Println("Hardware removed from system")
 	if len(hardwareRemoved) == 0 {
 		log.Println("  None")
 	}
 	for _, hardware := range hardwareRemoved {
-		hardwareRaw, err := json.Marshal(hardware)
+		hardwareRaw, err := buildHardwareString(hardware)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
-		log.Printf("  %s\n", hardware.Xname)
-		log.Printf("  - %s\n", string(hardwareRaw))
+		log.Printf("  %-16s - %s\n", hardware.Xname, hardwareRaw)
 	}
 
 	log.Println()
+	return nil
 }
 
-func (te *TopologyEngine) determineCabinetNetwork(networkPrefix string, class sls_common.CabinetType) (string, error) {
+func buildHardwareString(hardware sls_common.GenericHardware) (string, error) {
+	extraPropertiesRaw, err := sls.DecodeHardwareExtraProperties(hardware)
+	if err != nil {
+		return "", err
+	}
+
+	var tokens []string
+	tokens = append(tokens, fmt.Sprintf("Type: %s", hardware.TypeString))
+
+	switch hardware.TypeString {
+	case xnametypes.Cabinet:
+		// Nothing to do
+	case xnametypes.CabinetPDUController:
+		// Nothing to do
+	case xnametypes.RouterBMC:
+		// Nothing to do
+	case xnametypes.NodeBMC:
+		// Nothing to do
+	case xnametypes.Node:
+		if extraProperties, ok := extraPropertiesRaw.(sls_common.ComptypeNode); ok {
+			tokens = append(tokens, fmt.Sprintf("Aliases: [%s]", strings.Join(extraProperties.Aliases, ",")))
+			if extraProperties.Role != "" {
+				tokens = append(tokens, fmt.Sprintf("Role: %s", extraProperties.Role))
+			}
+			if extraProperties.SubRole != "" {
+				tokens = append(tokens, fmt.Sprintf("SubRole: %s", extraProperties.SubRole))
+			}
+			if extraProperties.NID != 0 {
+				tokens = append(tokens, fmt.Sprintf("NID: %d", extraProperties.NID))
+			}
+		}
+	case xnametypes.MgmtSwitch:
+		if extraProperties, ok := extraPropertiesRaw.(sls_common.ComptypeMgmtSwitch); ok {
+			tokens = append(tokens,
+				fmt.Sprintf("Aliases: [%s]", strings.Join(extraProperties.Aliases, ",")),
+				fmt.Sprintf("Brand: %s", extraProperties.Brand),
+			)
+
+			if extraProperties.Model != "" {
+				tokens = append(tokens, fmt.Sprintf("Model: %s", extraProperties.Model))
+			}
+			if extraProperties.IP4Addr != "" {
+				tokens = append(tokens, fmt.Sprintf("IP4Addr: %s", extraProperties.IP4Addr))
+			}
+			if extraProperties.IP6Addr != "" {
+				tokens = append(tokens, fmt.Sprintf("IP6Addr: %s", extraProperties.IP6Addr))
+			}
+
+			tokens = append(tokens,
+				fmt.Sprintf("SNMPUsername: %s", extraProperties.SNMPUsername),
+				fmt.Sprintf("SNMPAuthProtocol: %s", extraProperties.SNMPAuthProtocol),
+				fmt.Sprintf("SNMPAuthPassword: %s", extraProperties.SNMPAuthPassword),
+				fmt.Sprintf("SNMPPrivProtocol: %s", extraProperties.SNMPPrivProtocol),
+				fmt.Sprintf("SNMPPrivPassword: %s", extraProperties.SNMPPrivPassword),
+			)
+		}
+	case xnametypes.MgmtHLSwitch:
+		if extraProperties, ok := extraPropertiesRaw.(sls_common.ComptypeMgmtHLSwitch); ok {
+			tokens = append(tokens,
+				fmt.Sprintf("Aliases: [%s]", strings.Join(extraProperties.Aliases, ",")),
+				fmt.Sprintf("Brand: %s", extraProperties.Brand),
+			)
+
+			if extraProperties.Model != "" {
+				tokens = append(tokens, fmt.Sprintf("Model: %s", extraProperties.Model))
+			}
+			if extraProperties.IP4Addr != "" {
+				tokens = append(tokens, fmt.Sprintf("IP4Addr: %s", extraProperties.IP4Addr))
+			}
+			if extraProperties.IP6Addr != "" {
+				tokens = append(tokens, fmt.Sprintf("IP6Addr: %s", extraProperties.IP6Addr))
+			}
+		}
+	case xnametypes.MgmtSwitchConnector:
+		if extraProperties, ok := extraPropertiesRaw.(sls_common.ComptypeMgmtSwitchConnector); ok {
+			tokens = append(tokens,
+				fmt.Sprintf("VendorName: %s", extraProperties.VendorName),
+				fmt.Sprintf("NodeNics: [%s]", strings.Join(extraProperties.NodeNics, ",")),
+			)
+		}
+	default:
+		// If we don't know how to pretty print it, lets just do the raw JSON
+		hardwareRaw, err := json.Marshal(hardware)
+		if err != nil {
+			return "", err
+		}
+		tokens = append(tokens, string(hardwareRaw))
+	}
+
+	return strings.Join(tokens, ", "), nil
+}
+
+func determineCabinetNetwork(networkPrefix string, class sls_common.CabinetType) (string, error) {
 	var suffix string
 	switch class {
 	case sls_common.ClassRiver:

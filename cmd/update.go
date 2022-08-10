@@ -118,11 +118,11 @@ to quickly create a Cobra application.`,
 			log.Printf("Using application node metadata file at %s\n", applicationNodeMetadataFile)
 			applicationNodeMetadataRaw, err := ioutil.ReadFile(applicationNodeMetadataFile)
 			if err != nil {
-				log.Fatal("Error:", err)
+				log.Fatal("Error: ", err)
 			}
 
 			if err := yaml.Unmarshal(applicationNodeMetadataRaw, &applicationNodeMetadata); err != nil {
-				log.Fatal("Error:", err)
+				log.Fatal("Error: ", err)
 			}
 		}
 
@@ -133,7 +133,7 @@ to quickly create a Cobra application.`,
 
 		currentSLSState, err := slsClient.GetDumpState(ctx)
 		if err != nil {
-			log.Fatal("Error:", err)
+			log.Fatal("Error: ", err)
 		}
 
 		// TOOD Ideally we could add the initial set of hardware to SLS, if the systems networking information
@@ -145,7 +145,7 @@ to quickly create a Cobra application.`,
 		// Build up the application node metadata for the current state of the system
 		currentApplicationNodeMetadata, err := sls.BuildApplicationNodeMetadata(currentSLSState.Hardware)
 		if err != nil {
-			log.Fatal("Error:", err)
+			log.Fatal("Error: ", err)
 		}
 
 		foundDuplicates := false
@@ -162,7 +162,7 @@ to quickly create a Cobra application.`,
 			// Build up the application metadata config for the expected state of the system if no file was provided.
 			applicationNodeMetadata, err = ccj.BuildApplicationNodeMetadata(paddle, currentApplicationNodeMetadata)
 			if err != nil {
-				log.Fatal("Error:", err)
+				log.Fatal("Error: ", err)
 			}
 		}
 
@@ -206,12 +206,12 @@ to quickly create a Cobra application.`,
 				log.Printf("Add --application-node-metadata=%s to the command line arguments and try again.\n", applicationNodeMetadataFile)
 				applicationNodeMetadataRaw, err := yaml.Marshal(applicationNodeMetadata)
 				if err != nil {
-					log.Fatal("Error:", err)
+					log.Fatal("Error: ", err)
 				}
 
 				err = ioutil.WriteFile(applicationNodeMetadataFile, applicationNodeMetadataRaw, 0600)
 				if err != nil {
-					log.Fatal("Error:", err)
+					log.Fatal("Error: ", err)
 				}
 			}
 
@@ -233,13 +233,13 @@ to quickly create a Cobra application.`,
 		// Retrieve BSS data
 		managementNCNs, err := sls.FindManagementNCNs(currentSLSState.Hardware)
 		if err != nil {
-			log.Fatal("Error:", err)
+			log.Fatal("Error: ", err)
 		}
 
 		log.Println("Retrieving Global boot parameters from BSS")
 		bssGlobalBootParameters, err := bssClient.GetBSSBootparametersByName("Global")
 		if err != nil {
-			log.Fatal("Error:", err)
+			log.Fatal("Error: ", err)
 		}
 
 		managementNCNBootParams := map[string]*bssTypes.BootParams{}
@@ -247,7 +247,7 @@ to quickly create a Cobra application.`,
 			log.Printf("Retrieving boot parameters for %s from BSS\n", managementNCN.Xname)
 			bootParams, err := bssClient.GetBSSBootparametersByName(managementNCN.Xname)
 			if err != nil {
-				log.Fatal("Error:", err)
+				log.Fatal("Error: ", err)
 			}
 
 			managementNCNBootParams[managementNCN.Xname] = bootParams
@@ -266,7 +266,7 @@ to quickly create a Cobra application.`,
 
 		topologyChanges, err := topologyEngine.DetermineChanges()
 		if err != nil {
-			log.Fatal("Error:", err)
+			log.Fatal("Error: ", err)
 		}
 
 		// Merge Topology Changes into the current SLS state
@@ -283,7 +283,7 @@ to quickly create a Cobra application.`,
 			//
 			topologyChangesRaw, err := json.MarshalIndent(topologyChanges, "", "  ")
 			if err != nil {
-				log.Fatal("Error:", err)
+				log.Fatal("Error: ", err)
 			}
 
 			ioutil.WriteFile("topology_changes.json", topologyChangesRaw, 0600)
@@ -315,7 +315,7 @@ to quickly create a Cobra application.`,
 
 		var currentGlobalHostRecords bss.HostRecords
 		if err := mapstructure.Decode(bssGlobalBootParameters.CloudInit.MetaData["host_records"], &currentGlobalHostRecords); err != nil {
-			log.Fatal("Error:", err)
+			log.Fatal("Error: ", err)
 		}
 
 		if !reflect.DeepEqual(currentGlobalHostRecords, expectedGlobalHostRecords) {
@@ -393,7 +393,7 @@ to quickly create a Cobra application.`,
 				if slsClient != nil {
 					err := slsClient.PutNetwork(ctx, modifiedNetwork)
 					if err != nil {
-						log.Fatal("Error:", err)
+						log.Fatal("Error: ", err)
 					}
 				}
 			}
@@ -406,7 +406,7 @@ to quickly create a Cobra application.`,
 			log.Println("Updating BSS Global boot parameters")
 			_, err := bssClient.UploadEntryToBSS(*bssGlobalBootParameters, http.MethodPut)
 			if err != nil {
-				log.Fatal("Error:", err)
+				log.Fatal("Error: ", err)
 			}
 		}
 
@@ -421,7 +421,7 @@ to quickly create a Cobra application.`,
 			log.Printf("Updating BSS boot parameters for %s\n", xname)
 			_, err := bssClient.UploadEntryToBSS(*managementNCNBootParams[xname], http.MethodPut)
 			if err != nil {
-				log.Fatal("Error:", err)
+				log.Fatal("Error: ", err)
 			}
 		}
 	},
