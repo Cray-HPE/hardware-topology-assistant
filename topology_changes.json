@@ -7,6 +7,7 @@
       "Class": "River",
       "TypeString": "MgmtHLSwitch",
       "ExtraProperties": {
+        "IP4addr": "10.254.0.12",
         "Brand": "Arista",
         "Aliases": [
           "sw-edge-001"
@@ -20,6 +21,7 @@
       "Class": "River",
       "TypeString": "MgmtHLSwitch",
       "ExtraProperties": {
+        "IP4addr": "10.254.0.13",
         "Brand": "Arista",
         "Aliases": [
           "sw-edge-002"
@@ -186,6 +188,7 @@
       "Class": "River",
       "TypeString": "MgmtHLSwitch",
       "ExtraProperties": {
+        "IP4addr": "10.254.0.14",
         "Brand": "Aruba",
         "Model": "8325_JL625A",
         "Aliases": [
@@ -200,6 +203,7 @@
       "Class": "River",
       "TypeString": "MgmtHLSwitch",
       "ExtraProperties": {
+        "IP4addr": "10.254.0.15",
         "Brand": "Aruba",
         "Model": "8325_JL625A",
         "Aliases": [
@@ -214,6 +218,7 @@
       "Class": "River",
       "TypeString": "MgmtHLSwitch",
       "ExtraProperties": {
+        "IP4addr": "10.254.0.16",
         "Brand": "Aruba",
         "Model": "8325_JL625A",
         "Aliases": [
@@ -228,6 +233,7 @@
       "Class": "River",
       "TypeString": "MgmtHLSwitch",
       "ExtraProperties": {
+        "IP4addr": "10.254.0.17",
         "Brand": "Aruba",
         "Model": "8325_JL625A",
         "Aliases": [
@@ -503,8 +509,8 @@
         "10.103.9.0/25"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660145654,
-      "LastUpdatedTime": "2022-08-10 15:34:14.078751 +0000 UTC",
+      "LastUpdated": 1660146132,
+      "LastUpdatedTime": "2022-08-10 15:42:12.882514 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.103.9.0/25",
         "VlanRange": [
@@ -673,8 +679,8 @@
         "10.103.0.0/25"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660145654,
-      "LastUpdatedTime": "2022-08-10 15:34:14.078751 +0000 UTC",
+      "LastUpdated": 1660146132,
+      "LastUpdatedTime": "2022-08-10 15:42:12.882514 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.103.0.0/25",
         "VlanRange": [
@@ -932,8 +938,8 @@
         "10.254.0.0/17"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660145654,
-      "LastUpdatedTime": "2022-08-10 15:34:14.078751 +0000 UTC",
+      "LastUpdated": 1660146132,
+      "LastUpdatedTime": "2022-08-10 15:42:12.882514 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.254.0.0/17",
         "VlanRange": [
@@ -1249,8 +1255,8 @@
         "10.107.0.0/17"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660145654,
-      "LastUpdatedTime": "2022-08-10 15:34:14.078751 +0000 UTC",
+      "LastUpdated": 1660146132,
+      "LastUpdatedTime": "2022-08-10 15:42:12.882514 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.107.0.0/17",
         "VlanRange": [
@@ -1287,8 +1293,8 @@
         "10.1.1.0/16"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660145654,
-      "LastUpdatedTime": "2022-08-10 15:34:14.078751 +0000 UTC",
+      "LastUpdated": 1660146132,
+      "LastUpdatedTime": "2022-08-10 15:42:12.882514 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.1.1.0/16",
         "VlanRange": [
@@ -1517,8 +1523,8 @@
         "10.252.0.0/17"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660145654,
-      "LastUpdatedTime": "2022-08-10 15:34:14.078751 +0000 UTC",
+      "LastUpdated": 1660146132,
+      "LastUpdatedTime": "2022-08-10 15:42:12.882514 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.252.0.0/17",
         "VlanRange": [
@@ -1844,8 +1850,8 @@
         "10.106.0.0/17"
       ],
       "Type": "ethernet",
-      "LastUpdated": 1660145654,
-      "LastUpdatedTime": "2022-08-10 15:34:14.078751 +0000 UTC",
+      "LastUpdated": 1660146132,
+      "LastUpdatedTime": "2022-08-10 15:42:12.882514 +0000 UTC",
       "ExtraProperties": {
         "CIDR": "10.106.0.0/17",
         "VlanRange": [

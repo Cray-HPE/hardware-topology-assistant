@@ -323,6 +323,21 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 					hardware.ExtraPropertiesRaw = extraProperties
 					hardwareAdded[i] = hardware
 				}
+
+				// I know of nothing that uses this IP for MgmtHLSwitches, but it is how CSI creates this hardware object,
+				// so we should add it
+				if hmsType == xnametypes.MgmtHLSwitch && networkName == "HMN" {
+					extraProperties, ok := hardware.ExtraPropertiesRaw.(sls_common.ComptypeMgmtHLSwitch)
+					if !ok {
+						return nil, fmt.Errorf("unable to get extra properties for switch (%s)", hardware.Xname)
+					}
+
+					extraProperties.IP4Addr = ipReservation.IPAddress.String()
+
+					// Push the updated extra properties back into the list of new hardware
+					hardware.ExtraPropertiesRaw = extraProperties
+					hardwareAdded[i] = hardware
+				}
 			}
 
 		}
