@@ -178,7 +178,7 @@ func AllocateCabinetSubnet(slsNetwork sls_common.NetworkExtraProperties, xname x
 		vlan = *vlanOverride
 	} else {
 		// Look at other cabinets in the subnet and pick one.
-		// TODO THIS MIGHT FALL APART WITH LIQUID-COOLED CABINETS AS THOSE CAN BE USER SUPPLIED
+		// TODO THIS MIGHT FALL APART WITH LIQUID-COOLED CABINETS AS THOSE CAN BE USER SUPPLIED, but we don't currently support adding this with this tool
 	}
 	// TODO make sure vlan is unique
 

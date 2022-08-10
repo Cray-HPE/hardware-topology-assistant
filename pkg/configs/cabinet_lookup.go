@@ -8,9 +8,6 @@ import (
 	"github.com/Cray-HPE/hms-xname/xnames"
 )
 
-// TODO replace with the actual cabinets.yaml
-// TODO Normalize xnames
-// TODO Verify xnames are unique
 type CabinetLookup map[csi.CabinetKind][]string
 
 func (cl CabinetLookup) CabinetKind(wantedCabinet string) (csi.CabinetKind, error) {

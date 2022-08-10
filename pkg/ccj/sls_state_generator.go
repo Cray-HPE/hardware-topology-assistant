@@ -114,7 +114,7 @@ func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLook
 			}
 
 			extraProperties := sls_common.ComptypeCabinet{
-				Networks: map[string]map[string]sls_common.CabinetNetworks{}, // TODO this should be outright removed. MEDS and KEA no longer look here
+				Networks: map[string]map[string]sls_common.CabinetNetworks{}, // TODO this should be outright removed. MEDS and KEA no longer look here for network info, but MEDS still needs this key to exist.
 			}
 
 			if cabinetKind.IsModel() {
@@ -160,7 +160,6 @@ func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup co
 			// This is normally seen on newer TDS/Hill cabinet systems
 			return buildSLSMgmtHLSwitch(topologyNode, switchAliasesOverrides)
 		} else if strings.HasPrefix(topologyNode.Location.Rack, "cdu") {
-			// TODO untested path
 			return buildSLSCDUMgmtSwitch(topologyNode, switchAliasesOverrides)
 		}
 	case "customer_edge_router":
@@ -228,6 +227,7 @@ func buildSLSSlingshotHSNSwitch(location Location) (sls_common.GenericHardware, 
 
 func buildSLSCMC(location Location) (sls_common.GenericHardware, error) {
 	// TODO what should be done if if the CMC does not have a bmc connection? Ie the Intel CMC that doesn't really exist
+	// Right now we are emulating the current behavior of CSI, where the fake CMC exists in SLS and no MgmtSwitchConnector exists.
 
 	cabinetOrdinal, err := extractNumber(location.Rack)
 	if err != nil {
@@ -355,10 +355,10 @@ func BuildNodeXname(topologyNode TopologyNode, paddle Paddle, extraProperties sl
 
 		// Calculate the BMC ordinal, which is derived from its NID.
 		if extraProperties.Role != "Compute" {
-			return xnames.Node{}, fmt.Errorf("calculating BMC ordinal for a dense quad node chassis for a non compute node (%v). Is this even supported?", extraProperties.Role)
+			return xnames.Node{}, fmt.Errorf("calculating BMC ordinal for a dense quad node chassis for a non compute node (%v) which is currently not supported", extraProperties.Role)
 		}
 		if extraProperties.NID == 0 {
-			return xnames.Node{}, fmt.Errorf("are zero NIDs even supported? I don't think so...")
+			return xnames.Node{}, fmt.Errorf("found compute node with a NID of 0")
 		}
 		bmcOrdinal = ((extraProperties.NID - 1) % 4) + 1
 	} else if strings.ToLower(topologyNode.Location.SubLocation) == "l" {
@@ -368,9 +368,6 @@ func BuildNodeXname(topologyNode TopologyNode, paddle Paddle, extraProperties sl
 		// This is the left side node in a dual node chassis
 		bmcOrdinal = 2
 	}
-
-	// TODO Is this ia dual node chassis?
-	// Otherwise this is a single node chassis
 
 	xname := xnames.Node{
 		Cabinet:       cabinetOrdinal,
@@ -478,8 +475,8 @@ func buildSLSMgmtHLSwitch(topologyNode TopologyNode, switchAliasesOverrides map[
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract rack U ordinal due to: %w", err)
 	}
 
-	spaceOrdinal := 1                                              // Defaults to 0 if this is the switch occupies the whole rack U. Not one half of it
-	if strings.ToLower(topologyNode.Location.SubLocation) == "l" { // TODO will CANU always captailize it? No
+	spaceOrdinal := 1 // Defaults to 1 if this is the switch occupies the whole rack U. Not one half of it
+	if strings.ToLower(topologyNode.Location.SubLocation) == "l" {
 		spaceOrdinal = 1
 	} else if strings.ToLower(topologyNode.Location.SubLocation) == "r" {
 		spaceOrdinal = 2
@@ -644,7 +641,7 @@ func BuildSLSMgmtSwitchConnector(hardware sls_common.GenericHardware, topologyNo
 	case "aruba":
 		vendorName = fmt.Sprintf("1/1/%d", destinationPort.DestPort)
 	case "mellanox":
-		// TODO we don't support this for BMCs
+		// TODO we don't support this switch for BMC connections
 		fallthrough
 	default:
 		return sls_common.GenericHardware{}, fmt.Errorf("unexpected switch vendor (%s)", destinationTopologyNode.Vendor)

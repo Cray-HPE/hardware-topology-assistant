@@ -10,7 +10,6 @@ type ApplicationNodeMetadata struct {
 	Aliases []string
 }
 
-// TODO Unit test
 func (m ApplicationNodeMetadataMap) AllAliases() map[string][]string {
 	allAliases := map[string][]string{}
 	for xname, metadata := range m {

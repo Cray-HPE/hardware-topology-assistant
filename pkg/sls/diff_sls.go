@@ -85,8 +85,8 @@ func HardwareUnion(a, b sls_common.SLSState) (identicalHardware []sls_common.Gen
 		}
 
 		// Next check to see if the extra properties between the two hardware objects
-		// TODO maybe we should ignore fields like IPv4 fields during the comparison
-		// as that is something that we don't know when generating from the CCJ
+		// We are ignoring fields like IPv4 fields and Model during the comparison
+		// as that is something that we don't know when generating from the CCJ or CSI
 
 		extraPropertiesA, err := DecodeHardwareExtraProperties(hardwareA)
 		if err != nil {

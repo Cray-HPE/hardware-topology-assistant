@@ -153,8 +153,6 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 		return nil, fmt.Errorf("refusing to continue, found hardware with differing values (Class and/or ExtraProperties). Please reconcile the differences")
 	}
 
-	// TODO Disallow for mountain cabinet additions? Or for right now just ignore them all add stuff with the River class
-
 	// TODO Verify that no hardware was moved, which would appear as a remove and add.
 	// TODO Verify all of the new hardware has unique aliases.
 
