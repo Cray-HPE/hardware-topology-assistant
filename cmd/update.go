@@ -498,14 +498,10 @@ func init() {
 	// is called directly, e.g.:
 	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	// TODO hack should point to a SLS service
-	// TODO Would be cool if this could work with both HTTP(s) with a SLS service, and
-	// locally with a SLS state file
 	updateCmd.Flags().String("sls-url", "http://localhost:8376", "URL to SLS")
 	updateCmd.Flags().String("bss-url", "http://localhost:27778", "URL to BSS")
 	updateCmd.Flags().String("hsm-url", "http://localhost:27779", "URL to HSM")
 
-	updateCmd.Flags().String("cabinet-lookup", "cabinet_lookup.yaml", "YAML containing extra cabinet metadata")
 	updateCmd.Flags().String("application-node-metadata", "", "YAML to control Application node identification during the SLS State generation. Only required if application nodes are being added to the system")
 }
 
