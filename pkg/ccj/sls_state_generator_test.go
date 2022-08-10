@@ -172,7 +172,7 @@ func (suite *SLSStateGeneratorTestSuite) TestMgmtSwitch_Aruba() {
 		},
 	}
 
-	hardware, err := buildSLSMgmtSwitch(topologyNode)
+	hardware, err := buildSLSMgmtSwitch(topologyNode, nil)
 	suite.NoError(err)
 
 	expectedHardware := sls_common.NewGenericHardware("x3001c0w32", sls_common.ClassRiver, sls_common.ComptypeMgmtSwitch{
@@ -202,7 +202,7 @@ func (suite *SLSStateGeneratorTestSuite) TestMgmtSwitch_Dell() {
 		},
 	}
 
-	hardware, err := buildSLSMgmtSwitch(topologyNode)
+	hardware, err := buildSLSMgmtSwitch(topologyNode, nil)
 	suite.NoError(err)
 
 	expectedHardware := sls_common.NewGenericHardware("x3001c0w32", sls_common.ClassRiver, sls_common.ComptypeMgmtSwitch{
@@ -232,7 +232,7 @@ func (suite *SLSStateGeneratorTestSuite) TestMgmtHLSwitch_Aruba() {
 		},
 	}
 
-	hardware, err := buildSLSMgmtHLSwitch(topologyNode)
+	hardware, err := buildSLSMgmtHLSwitch(topologyNode, nil)
 	suite.NoError(err)
 
 	expectedHardware := sls_common.NewGenericHardware("x3000c0h38s1", sls_common.ClassRiver, sls_common.ComptypeMgmtHLSwitch{
@@ -258,7 +258,7 @@ func (suite *SLSStateGeneratorTestSuite) TestMgmtHLSwitch_Mellanox_Left() {
 		},
 	}
 
-	hardware, err := buildSLSMgmtHLSwitch(topologyNode)
+	hardware, err := buildSLSMgmtHLSwitch(topologyNode, nil)
 	suite.NoError(err)
 
 	expectedHardware := sls_common.NewGenericHardware("x3000c0h38s1", sls_common.ClassRiver, sls_common.ComptypeMgmtHLSwitch{
@@ -284,7 +284,7 @@ func (suite *SLSStateGeneratorTestSuite) TestMgmtHLSwitch_Mellanox_Right() {
 		},
 	}
 
-	hardware, err := buildSLSMgmtHLSwitch(topologyNode)
+	hardware, err := buildSLSMgmtHLSwitch(topologyNode, nil)
 	suite.NoError(err)
 
 	expectedHardware := sls_common.NewGenericHardware("x3000c0h38s2", sls_common.ClassRiver, sls_common.ComptypeMgmtHLSwitch{
@@ -309,7 +309,7 @@ func (suite *SLSStateGeneratorTestSuite) TestMgmtHLSwitch_Arista() {
 		},
 	}
 
-	hardware, err := buildSLSMgmtHLSwitch(topologyNode)
+	hardware, err := buildSLSMgmtHLSwitch(topologyNode, nil)
 	suite.NoError(err)
 
 	expectedHardware := sls_common.NewGenericHardware("x3000c0h18s1", sls_common.ClassRiver, sls_common.ComptypeMgmtHLSwitch{
@@ -333,7 +333,7 @@ func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Aruba() {
 		},
 	}
 
-	hardware, err := buildSLSCDUMgmtSwitch(topologyNode)
+	hardware, err := buildSLSCDUMgmtSwitch(topologyNode, nil)
 	suite.NoError(err)
 
 	expectedHardware := sls_common.NewGenericHardware("d0w2", sls_common.ClassMountain, sls_common.ComptypeCDUMgmtSwitch{
@@ -358,7 +358,7 @@ func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Dell() {
 		},
 	}
 
-	hardware, err := buildSLSCDUMgmtSwitch(topologyNode)
+	hardware, err := buildSLSCDUMgmtSwitch(topologyNode, nil)
 	suite.NoError(err)
 
 	expectedHardware := sls_common.NewGenericHardware("d0w2", sls_common.ClassMountain, sls_common.ComptypeCDUMgmtSwitch{

@@ -73,7 +73,7 @@ func main() {
 		panic(err)
 	}
 
-	slsState, err := ccj.BuildExpectedHardwareState(paddle, cabinetLookup, applicationNodeMetadata)
+	slsState, err := ccj.BuildExpectedHardwareState(paddle, cabinetLookup, applicationNodeMetadata, nil)
 	if err != nil {
 		panic(err)
 	}

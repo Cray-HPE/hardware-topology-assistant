@@ -35,7 +35,7 @@ func extractNumber(numberRaw string) (int, error) {
 	return number, nil
 }
 
-func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeMetadata configs.ApplicationNodeMetadataMap) (sls_common.SLSState, error) {
+func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeMetadata configs.ApplicationNodeMetadataMap, switchAliasesOverrides map[string][]string) (sls_common.SLSState, error) {
 	// Iterate over the paddle file to build of SLS data
 	allHardware := map[string]sls_common.GenericHardware{}
 	for _, topologyNode := range paddle.Topology {
@@ -45,7 +45,7 @@ func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLook
 		//
 		// Build the SLS hardware representation
 		//
-		hardware, err := BuildSLSHardware(topologyNode, paddle, cabinetLookup, applicationNodeMetadata)
+		hardware, err := BuildSLSHardware(topologyNode, paddle, cabinetLookup, applicationNodeMetadata, switchAliasesOverrides)
 		if err != nil {
 			panic(err)
 		}
@@ -139,7 +139,7 @@ func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLook
 	}, nil
 }
 
-func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeMetadata configs.ApplicationNodeMetadataMap) (sls_common.GenericHardware, error) {
+func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeMetadata configs.ApplicationNodeMetadataMap, switchAliasesOverrides map[string][]string) (sls_common.GenericHardware, error) {
 	// TODO use CANU files for lookup
 	// ALso look at using type
 	switch topologyNode.Architecture {
@@ -158,19 +158,19 @@ func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup co
 		if strings.HasPrefix(topologyNode.Location.Rack, "x") {
 			// This CDU MgmtSwitch is present in a river cabinet.
 			// This is normally seen on newer TDS/Hill cabinet systems
-			return buildSLSMgmtHLSwitch(topologyNode)
+			return buildSLSMgmtHLSwitch(topologyNode, switchAliasesOverrides)
 		} else if strings.HasPrefix(topologyNode.Location.Rack, "cdu") {
 			// TODO untested path
-			return buildSLSCDUMgmtSwitch(topologyNode)
+			return buildSLSCDUMgmtSwitch(topologyNode, switchAliasesOverrides)
 		}
 	case "customer_edge_router":
 		fallthrough
 	case "spine":
 		fallthrough
 	case "river_ncn_leaf":
-		return buildSLSMgmtHLSwitch(topologyNode)
+		return buildSLSMgmtHLSwitch(topologyNode, switchAliasesOverrides)
 	case "river_bmc_leaf":
-		return buildSLSMgmtSwitch(topologyNode)
+		return buildSLSMgmtSwitch(topologyNode, switchAliasesOverrides)
 	default:
 		// There are a lot of architecture types that can be a node, but for SLS we just need to know that it is a server
 		// of some sort.
@@ -421,7 +421,7 @@ func buildSLSNode(topologyNode TopologyNode, paddle Paddle, applicationNodeMetad
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
 }
 
-func buildSLSMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+func buildSLSMgmtSwitch(topologyNode TopologyNode, switchAliasesOverrides map[string][]string) (sls_common.GenericHardware, error) {
 	cabinetOrdinal, err := extractNumber(topologyNode.Location.Rack)
 	if err != nil {
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
@@ -438,17 +438,24 @@ func buildSLSMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, 
 		MgmtSwitch: rackUOrdinal,
 	}
 
+	// Determine the switch branch
 	slsBrand, ok := vendorBrandMapping[topologyNode.Vendor]
 	if !ok {
 		return sls_common.GenericHardware{}, fmt.Errorf("unknown topology node vendor: (%s)", topologyNode.Vendor)
 	}
 
+	// Determine the switch alias, by default use the one from the CCJ
+	aliases := []string{topologyNode.CommonName}
+	if aliasesOverride, ok := switchAliasesOverrides[xname.String()]; ok {
+		// There is a chance that the switch aliases in SLS do not match so lets use the override
+		aliases = aliasesOverride
+	}
+
+	// Build up the extra properties!
 	extraProperties := sls_common.ComptypeMgmtSwitch{
-		Brand: slsBrand,
-		Model: topologyNode.Model,
-		Aliases: []string{
-			topologyNode.CommonName,
-		},
+		Brand:   slsBrand,
+		Model:   topologyNode.Model,
+		Aliases: aliases,
 		// IP4Addr: , // TODO the hms-discovery job and REDS should be using DNS for the HMN IP of the leaf-bmc switch
 		SNMPAuthPassword: fmt.Sprintf("vault://hms-creds/%s", xname.String()),
 		SNMPAuthProtocol: "MD5",
@@ -460,7 +467,7 @@ func buildSLSMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, 
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassRiver, extraProperties), nil
 }
 
-func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+func buildSLSMgmtHLSwitch(topologyNode TopologyNode, switchAliasesOverrides map[string][]string) (sls_common.GenericHardware, error) {
 	cabinetOrdinal, err := extractNumber(topologyNode.Location.Rack)
 	if err != nil {
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
@@ -485,6 +492,7 @@ func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware
 		MgmtHLSwitch:          spaceOrdinal,
 	}
 
+	// Determine the switch branch
 	var slsBrand string
 	if brand, ok := vendorBrandMapping[topologyNode.Vendor]; ok {
 		slsBrand = brand
@@ -496,12 +504,18 @@ func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware
 		return sls_common.GenericHardware{}, fmt.Errorf("unknown topology node vendor: (%s)", topologyNode.Vendor)
 	}
 
+	// Determine the switch alias, by default use the one from the CCJ
+	aliases := []string{topologyNode.CommonName}
+	if aliasesOverride, ok := switchAliasesOverrides[xname.String()]; ok {
+		// There is a chance that the switch aliases in SLS do not match so lets use the override
+		aliases = aliasesOverride
+	}
+
+	// Build up the extra properties!
 	extraProperties := sls_common.ComptypeMgmtHLSwitch{
-		Brand: slsBrand,
-		Model: topologyNode.Model,
-		Aliases: []string{
-			topologyNode.CommonName,
-		},
+		Brand:   slsBrand,
+		Model:   topologyNode.Model,
+		Aliases: aliases,
 		// IP4Addr: , // TODO the hms-discovery job and REDS should be using DNS for the HMN IP of the leaf-bmc switch
 	}
 
@@ -509,7 +523,7 @@ func buildSLSMgmtHLSwitch(topologyNode TopologyNode) (sls_common.GenericHardware
 
 }
 
-func buildSLSCDUMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardware, error) {
+func buildSLSCDUMgmtSwitch(topologyNode TopologyNode, switchAliasesOverrides map[string][]string) (sls_common.GenericHardware, error) {
 	cduOrdinal, err := extractNumber(topologyNode.Location.Rack)
 	if err != nil {
 		return sls_common.GenericHardware{}, fmt.Errorf("unable to extract cabinet ordinal due to: %w", err)
@@ -525,17 +539,24 @@ func buildSLSCDUMgmtSwitch(topologyNode TopologyNode) (sls_common.GenericHardwar
 		CDUMgmtSwitch: rackUOrdinal,
 	}
 
+	// Determine the switch branch
 	slsBrand, ok := vendorBrandMapping[topologyNode.Vendor]
 	if !ok {
 		return sls_common.GenericHardware{}, fmt.Errorf("unknown topology node vendor: (%s)", topologyNode.Vendor)
 	}
 
+	// Determine the switch alias, by default use the one from the CCJ
+	aliases := []string{topologyNode.CommonName}
+	if aliasesOverride, ok := switchAliasesOverrides[xname.String()]; ok {
+		// There is a chance that the switch aliases in SLS do not match so lets use the override
+		aliases = aliasesOverride
+	}
+
+	// Build up the extra properties!
 	extraProperties := sls_common.ComptypeCDUMgmtSwitch{
-		Brand: slsBrand,
-		Model: topologyNode.Model,
-		Aliases: []string{
-			topologyNode.CommonName,
-		},
+		Brand:   slsBrand,
+		Model:   topologyNode.Model,
+		Aliases: aliases,
 	}
 
 	return sls_common.NewGenericHardware(xname.String(), sls_common.ClassMountain, extraProperties), nil

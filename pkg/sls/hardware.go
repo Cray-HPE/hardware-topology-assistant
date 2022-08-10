@@ -71,10 +71,10 @@ func DecodeHardwareExtraProperties(hardware sls_common.GenericHardware) (result 
 	return result, err
 }
 
-func FindManagementNCNs(slsState sls_common.SLSState) ([]sls_common.GenericHardware, error) {
+func FindManagementNCNs(allHardware map[string]sls_common.GenericHardware) ([]sls_common.GenericHardware, error) {
 	var managementNCNs []sls_common.GenericHardware
 
-	for _, hardware := range slsState.Hardware {
+	for _, hardware := range allHardware {
 		if xnametypes.GetHMSType(hardware.Xname) != xnametypes.Node {
 			continue
 		}
@@ -98,16 +98,62 @@ func FindManagementNCNs(slsState sls_common.SLSState) ([]sls_common.GenericHardw
 	return managementNCNs, nil
 }
 
-func FilterHardware(allHardware map[string]sls_common.GenericHardware, filter func(sls_common.GenericHardware) bool) map[string]sls_common.GenericHardware {
+// FilterHardware will apply the given filter to a map of generic hardware
+func FilterHardware(allHardware map[string]sls_common.GenericHardware, filter func(sls_common.GenericHardware) (bool, error)) (map[string]sls_common.GenericHardware, error) {
 	result := map[string]sls_common.GenericHardware{}
 
 	for xname, hardware := range allHardware {
-		if filter(hardware) {
+		ok, err := filter(hardware)
+		if err != nil {
+			return nil, err
+		}
+
+		if ok {
 			result[xname] = hardware
 		}
 	}
 
-	return result
+	return result, nil
+}
+
+func FilterOutManagementNCNs(allHardware map[string]sls_common.GenericHardware) (map[string]sls_common.GenericHardware, error) {
+	// Find all of the Management NCNs
+	managementNCNs, err := FindManagementNCNs(allHardware)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build up some lookup Maps
+	isManagementNCN := map[string]bool{}
+	isManagementNCNBMC := map[string]bool{}
+	for _, hardware := range managementNCNs {
+		isManagementNCN[hardware.Xname] = true
+		isManagementNCN[xnametypes.GetHMSCompParent(hardware.Xname)] = true
+	}
+
+	return FilterHardware(allHardware, func(hardware sls_common.GenericHardware) (bool, error) {
+		// Check to see if this is a Management NCN
+		if isManagementNCN[hardware.Xname] {
+			return false, nil
+		}
+
+		// Check to see if this is a MgmtSwitchConnector for a Management NCN BMC
+		if hardware.TypeString == xnametypes.MgmtSwitchConnector {
+			var extraProperties sls_common.ComptypeMgmtSwitchConnector
+			if err := mapstructure.Decode(hardware.ExtraPropertiesRaw, &extraProperties); err != nil {
+				return false, err
+			}
+
+			for _, nodeNic := range extraProperties.NodeNics {
+				if isManagementNCNBMC[nodeNic] {
+					return false, nil
+				}
+			}
+		}
+
+		// This is not a Management NCN!
+		return true, nil
+	})
 }
 
 func BuildApplicationNodeMetadata(allHardware map[string]sls_common.GenericHardware) (configs.ApplicationNodeMetadataMap, error) {
@@ -139,4 +185,25 @@ func BuildApplicationNodeMetadata(allHardware map[string]sls_common.GenericHardw
 	}
 
 	return metadata, nil
+}
+
+func SwitchAliases(allHardware map[string]sls_common.GenericHardware) (map[string][]string, error) {
+	result := map[string][]string{}
+
+	// Find all switches
+	for _, hardware := range allHardware {
+		extraPropertiesRaw, err := DecodeHardwareExtraProperties(hardware)
+		if err != nil {
+			return nil, err
+		}
+
+		switch extraProperties := extraPropertiesRaw.(type) {
+		case sls_common.ComptypeMgmtSwitch:
+			result[hardware.Xname] = extraProperties.Aliases
+		case sls_common.ComptypeMgmtHLSwitch:
+			result[hardware.Xname] = extraProperties.Aliases
+		}
+	}
+
+	return result, nil
 }

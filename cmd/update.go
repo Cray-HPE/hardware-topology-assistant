@@ -253,7 +253,7 @@ to quickly create a Cobra application.`,
 		}
 
 		// Retrieve BSS data
-		managementNCNs, err := sls.FindManagementNCNs(currentSLSState)
+		managementNCNs, err := sls.FindManagementNCNs(currentSLSState.Hardware)
 		if err != nil {
 			panic(err)
 		}
