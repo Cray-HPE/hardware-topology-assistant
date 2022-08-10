@@ -196,8 +196,6 @@ func AllocateCabinetSubnet(networkName string, slsNetwork sls_common.NetworkExtr
 		}
 	}
 
-	fmt.Printf("Allocated cabinet vlan! %d\n", vlan)
-
 	if vlan == -1 {
 		return sls_common.IPV4Subnet{}, fmt.Errorf("failed to allocate VLAN for cabinet subnet (%s)", subnetName)
 	}

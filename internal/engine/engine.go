@@ -207,7 +207,6 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 					return nil, fmt.Errorf("unable to parse cabinet xname (%s)", hardware.Xname)
 				}
 
-				// TODO deal with Vlan later
 				subnet, err := ipam.AllocateCabinetSubnet(networkName, *networkExtraProperties, xname, nil)
 				if err != nil {
 					return nil, fmt.Errorf("unable to allocate subnet for cabinet (%s) in network (%s)", hardware.Xname, networkName)
@@ -215,7 +214,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 
 				// TODO Verify subnet VLAN is unique
 
-				log.Printf("Allocated subnet %s in network %s for %s\n", subnet.CIDR, networkName, hardware.Xname)
+				log.Printf("Allocated cabinet subnet %s with vlan %d in network %s for %s\n", subnet.CIDR, subnet.VlanID, networkName, hardware.Xname)
 				subnetsAdded = append(subnetsAdded, SubnetChange{
 					NetworkName: networkName,
 					Subnet:      subnet,
