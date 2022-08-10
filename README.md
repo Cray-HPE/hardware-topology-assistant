@@ -16,6 +16,7 @@ canu /files : canu
 Cannot create cache directory: /home/jenkins/.canu
 ```
 
+```
 10G_25G_40G_100G I37,T107
 Mountain-TDS-Management K15,U36
 HMN J20,U36
@@ -46,3 +47,4 @@ canu validate shcd -a full --shcd "HPE System Hela CCD - Add acbinet.xlsx" \
 go run ./cmd/generate-sls-hardware hela-ccj-add-river-cabinet.json cabinet_lookup.yaml application_node_config.yaml
 
 go run ./cmd/diff-sls sls_state_hela.json sls_state.json
+```
