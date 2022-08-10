@@ -51,14 +51,18 @@ to quickly create a Cobra application.`,
 		// Setup Context
 		ctx := setupContext()
 
-		// TODO deal with getting an API token
+		// Retrieve API token
+		token := os.Getenv("TOKEN")
+		if token == "" {
+			log.Fatal("Error environment variable TOKEN was not set")
+		}
 
 		// Setup HTTP client
 		httpClient := retryablehttp.NewClient()
 
 		// Setup SLS client
-		currentSLSStateLocation := v.GetString("sls-url")
-		slsClient := sls_client.NewSLSClient(currentSLSStateLocation, httpClient.StandardClient(), "")
+		slsURL := v.GetString("sls-url")
+		slsClient := sls_client.NewSLSClient(slsURL, httpClient.StandardClient(), "").WithAPIToken(token)
 
 		// Setup BSS client
 		bssURL := v.GetString("bss-url")
@@ -66,7 +70,7 @@ to quickly create a Cobra application.`,
 		if bssURL != "" {
 			log.Printf("Using BSS at %s\n", bssURL)
 
-			bssClient = bss.NewBSSClient(bssURL, httpClient.StandardClient(), "todo_token")
+			bssClient = bss.NewBSSClient(bssURL, httpClient.StandardClient(), token)
 		} else {
 			log.Println("Connection to BSS disabled")
 		}
@@ -129,7 +133,7 @@ to quickly create a Cobra application.`,
 		//
 		// Retrieve current state from the system
 		//
-		log.Printf("Retrieving current SLS state from %s\n", currentSLSStateLocation)
+		log.Printf("Retrieving current SLS state from %s\n", slsURL)
 
 		currentSLSState, err := slsClient.GetDumpState(ctx)
 		if err != nil {
