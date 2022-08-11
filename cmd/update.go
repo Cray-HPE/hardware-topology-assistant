@@ -26,14 +26,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"reflect"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/Cray-HPE/hardware-topolgoy-assistant/internal/engine"
 	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/bss"
@@ -41,7 +44,6 @@ import (
 	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
 	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/sls"
 	"github.com/Cray-HPE/hms-bss/pkg/bssTypes"
-	dns_dhcp "github.com/Cray-HPE/hms-dns-dhcp/pkg"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mitchellh/mapstructure"
@@ -75,6 +77,26 @@ to quickly create a Cobra application.`,
 			log.Fatal("Error environment variable TOKEN was not set")
 		}
 
+		// Create directory to persist data from this run like logs and backups!
+		logBaseDirectory := v.GetString("log-base-dir")
+		timestamp := strings.Replace(time.Now().UTC().Format(time.RFC3339), ":", "-", -1)
+		logDirectory := path.Join(logBaseDirectory, fmt.Sprintf("hardware-topolgoy-assistant_%s", timestamp))
+		log.Printf("Log directory is at %s", logDirectory)
+		if err := os.MkdirAll(logDirectory, 0700); err != nil {
+			log.Fatalf("Failed to create log directory at %s due to: %s", logDirectory, err)
+		}
+
+		// Setup the log package to write to both stdout and a log file
+		logFilePath := path.Join(logDirectory, "hardware-topology-assistant.log")
+		logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer logFile.Close()
+
+		logWriter := io.MultiWriter(os.Stdout, logFile)
+		log.SetOutput(logWriter)
+
 		// Setup HTTP client
 		httpClient := retryablehttp.NewClient()
 
@@ -95,9 +117,9 @@ to quickly create a Cobra application.`,
 
 		// Setup HSM client
 		// TODO Expand hms-dns-dhcp to perform searches of IPs and MACs
-		hsmURL := v.GetString("hsm-url")
+		// hsmURL := v.GetString("hsm-url")
 
-		dns_dhcp.NewDHCPDNSHelper(hsmURL, httpClient)
+		// dns_dhcp.NewDHCPDNSHelper(hsmURL, httpClient)
 
 		//
 		// Parse input files
@@ -156,6 +178,17 @@ to quickly create a Cobra application.`,
 		currentSLSState, err := slsClient.GetDumpState(ctx)
 		if err != nil {
 			log.Fatal("Error: ", err)
+		}
+
+		// Save existing SLS State
+		existingSLSStateFile := path.Join(logDirectory, "existing_sls_state.json")
+		existingSLSStateRaw, err := json.MarshalIndent(currentSLSState, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := ioutil.WriteFile(existingSLSStateFile, existingSLSStateRaw, 0700); err != nil {
+			log.Fatal(err)
 		}
 
 		// TOOD Ideally we could add the initial set of hardware to SLS, if the systems networking information
@@ -264,6 +297,17 @@ to quickly create a Cobra application.`,
 			log.Fatal("Error: ", err)
 		}
 
+		// Save Global boot parameters
+		existingBSSBootParametersGlobalFile := path.Join(logDirectory, "existing_bss_bootparameters_global.json")
+		existingBSSBootParametersGlobalRaw, err := json.MarshalIndent(bssGlobalBootParameters, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := ioutil.WriteFile(existingBSSBootParametersGlobalFile, existingBSSBootParametersGlobalRaw, 0700); err != nil {
+			log.Fatal(err)
+		}
+
 		managementNCNBootParams := map[string]*bssTypes.BootParams{}
 		for _, managementNCN := range managementNCNs {
 			log.Printf("Retrieving boot parameters for %s from BSS\n", managementNCN.Xname)
@@ -273,6 +317,17 @@ to quickly create a Cobra application.`,
 			}
 
 			managementNCNBootParams[managementNCN.Xname] = bootParams
+
+			// Save Management NCN boot parameters
+			existingBSSBootParametersFile := path.Join(logDirectory, fmt.Sprintf("existing_bss_bootparameters_%s.json", managementNCN.Xname))
+			existingBSSBootParametersRaw, err := json.MarshalIndent(bootParams, "", "  ")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if err := ioutil.WriteFile(existingBSSBootParametersFile, existingBSSBootParametersRaw, 0700); err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		//
@@ -299,16 +354,15 @@ to quickly create a Cobra application.`,
 			currentSLSState.Hardware[hardware.Xname] = hardware
 		}
 
-		{
-			//
-			// Debug stuff
-			//
-			topologyChangesRaw, err := json.MarshalIndent(topologyChanges, "", "  ")
-			if err != nil {
-				log.Fatal("Error: ", err)
-			}
+		// Save topology changes
+		topologyChangesFile := path.Join(logDirectory, "topology_changes.json")
+		topologyChangesRaw, err := json.MarshalIndent(topologyChanges, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
 
-			ioutil.WriteFile("topology_changes.json", topologyChangesRaw, 0600)
+		if err := ioutil.WriteFile(topologyChangesFile, topologyChangesRaw, 0700); err != nil {
+			log.Fatal(err)
 		}
 
 		//
@@ -462,9 +516,11 @@ func init() {
 	// is called directly, e.g.:
 	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	updateCmd.Flags().String("sls-url", "http://localhost:8376", "URL to SLS")
-	updateCmd.Flags().String("bss-url", "http://localhost:27778", "URL to BSS")
-	updateCmd.Flags().String("hsm-url", "http://localhost:27779", "URL to HSM")
+	updateCmd.Flags().String("sls-url", "http://localhost:8376", "URL to System Layout Service (SLS)")
+	updateCmd.Flags().String("bss-url", "http://localhost:27778", "URL to Boot Script Service (BSS)")
+	updateCmd.Flags().String("hsm-url", "http://localhost:27779", "URL to Hardwrae State Manager (HSM)")
+
+	updateCmd.Flags().String("log-base-dir", ".", "Directory to contain the log folder generated from each run")
 
 	updateCmd.Flags().String("application-node-metadata", "", "YAML to control Application node identification during the SLS State generation. Only required if application nodes are being added to the system")
 }
