@@ -29,7 +29,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/sls"
+	"github.com/Cray-HPE/hardware-topology-assistant/pkg/sls"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/mitchellh/mapstructure"

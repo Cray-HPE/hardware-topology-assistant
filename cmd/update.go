@@ -38,11 +38,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Cray-HPE/hardware-topolgoy-assistant/internal/engine"
-	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/bss"
-	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/ccj"
-	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
-	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/sls"
+	"github.com/Cray-HPE/hardware-topology-assistant/internal/engine"
+	"github.com/Cray-HPE/hardware-topology-assistant/pkg/bss"
+	"github.com/Cray-HPE/hardware-topology-assistant/pkg/ccj"
+	"github.com/Cray-HPE/hardware-topology-assistant/pkg/configs"
+	"github.com/Cray-HPE/hardware-topology-assistant/pkg/sls"
 	"github.com/Cray-HPE/hms-bss/pkg/bssTypes"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
 	"github.com/hashicorp/go-retryablehttp"
@@ -80,7 +80,7 @@ to quickly create a Cobra application.`,
 		// Create directory to persist data from this run like logs and backups!
 		logBaseDirectory := v.GetString("log-base-dir")
 		timestamp := strings.Replace(time.Now().UTC().Format(time.RFC3339), ":", "-", -1)
-		logDirectory := path.Join(logBaseDirectory, fmt.Sprintf("hardware-topolgoy-assistant_%s", timestamp))
+		logDirectory := path.Join(logBaseDirectory, fmt.Sprintf("hardware-topology-assistant_%s", timestamp))
 		log.Printf("Log directory is at %s", logDirectory)
 		if err := os.MkdirAll(logDirectory, 0700); err != nil {
 			log.Fatalf("Failed to create log directory at %s due to: %s", logDirectory, err)

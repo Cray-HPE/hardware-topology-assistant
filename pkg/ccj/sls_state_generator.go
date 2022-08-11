@@ -30,7 +30,7 @@ import (
 	"strings"
 
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
-	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
+	"github.com/Cray-HPE/hardware-topology-assistant/pkg/configs"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/Cray-HPE/hms-xname/xnametypes"

@@ -25,7 +25,7 @@ package sls
 import (
 	"fmt"
 
-	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
+	"github.com/Cray-HPE/hardware-topology-assistant/pkg/configs"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/mitchellh/mapstructure"
