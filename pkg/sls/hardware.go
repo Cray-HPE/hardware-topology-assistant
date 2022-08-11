@@ -25,10 +25,10 @@ package sls
 import (
 	"fmt"
 
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/mitchellh/mapstructure"
-	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 )
 
 func DecodeHardwareExtraProperties(hardware sls_common.GenericHardware) (result interface{}, err error) {

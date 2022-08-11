@@ -29,8 +29,8 @@ import (
 	"strings"
 
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
 	"github.com/Cray-HPE/hms-xname/xnames"
-	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 )
 
 func DetermineCabinetLookup(paddle Paddle) (configs.CabinetLookup, error) {

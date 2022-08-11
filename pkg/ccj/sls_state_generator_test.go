@@ -25,10 +25,10 @@ package ccj
 import (
 	"testing"
 
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/stretchr/testify/suite"
-	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 )
 
 type SLSStateGeneratorTestSuite struct {

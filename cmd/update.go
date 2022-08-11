@@ -35,6 +35,11 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/internal/engine"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/bss"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/ccj"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/sls"
 	"github.com/Cray-HPE/hms-bss/pkg/bssTypes"
 	dns_dhcp "github.com/Cray-HPE/hms-dns-dhcp/pkg"
 	sls_client "github.com/Cray-HPE/hms-sls/pkg/sls-client"
@@ -42,11 +47,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.hpe.com/sjostrand/topology-tool/internal/engine"
-	"github.hpe.com/sjostrand/topology-tool/pkg/bss"
-	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
-	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
-	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 	"gopkg.in/yaml.v2"
 )
 

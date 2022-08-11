@@ -30,10 +30,10 @@ import (
 	"strings"
 
 	"github.com/Cray-HPE/cray-site-init/pkg/csi"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
-	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
 )
 
 // Paddle Vendor to SLS Brand

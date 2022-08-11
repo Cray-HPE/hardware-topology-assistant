@@ -25,7 +25,7 @@ package ccj
 import (
 	"fmt"
 
-	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
 )
 
 func BuildApplicationNodeMetadata(paddle Paddle, existingMetadata configs.ApplicationNodeMetadataMap) (configs.ApplicationNodeMetadataMap, error) {

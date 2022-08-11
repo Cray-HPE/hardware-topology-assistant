@@ -1,4 +1,4 @@
-module github.hpe.com/sjostrand/topology-tool
+module github.com/Cray-HPE/hardware-topolgoy-assistant
 
 go 1.17
 

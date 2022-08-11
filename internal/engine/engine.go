@@ -29,14 +29,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/ccj"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/configs"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/ipam"
+	"github.com/Cray-HPE/hardware-topolgoy-assistant/pkg/sls"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/Cray-HPE/hms-xname/xnametypes"
 	"github.com/mitchellh/mapstructure"
-	"github.hpe.com/sjostrand/topology-tool/pkg/ccj"
-	"github.hpe.com/sjostrand/topology-tool/pkg/configs"
-	"github.hpe.com/sjostrand/topology-tool/pkg/ipam"
-	"github.hpe.com/sjostrand/topology-tool/pkg/sls"
 	"gopkg.in/yaml.v2"
 )
 

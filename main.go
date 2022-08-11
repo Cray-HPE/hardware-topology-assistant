@@ -22,7 +22,7 @@
 
 package main
 
-import "github.hpe.com/sjostrand/topology-tool/cmd"
+import "github.com/Cray-HPE/hardware-topolgoy-assistant/cmd"
 
 func main() {
 	cmd.Execute()
