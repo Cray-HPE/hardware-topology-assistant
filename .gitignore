@@ -1,5 +1,40 @@
-*.xlsx
-output
-topology-tool
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+hardware-topolgoy-assistant
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# IDE
+.vscode
+.idea/
+
+# Misc
 cmd/old
+
+# Helm
+*.tgz
+
+# Log files
 hardware-topolgoy-assistant_*
+
+# System seed files
+systems
+*.xlsx
+*ccj.json
+application_node_metadata.yaml
+
+# Prevent certificates from getting checked in
+*.ca
+*.cer
+*.crt
+*.csr
+*.key
+*.pem
