@@ -24,6 +24,7 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -131,6 +132,9 @@ the system regarding their desired HSM SubRole, and alias.
 
 		// Setup HTTP client
 		httpClient := retryablehttp.NewClient()
+		httpClient.HTTPClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
 
 		// Setup SLS client
 		slsURL := v.GetString("sls-url")
