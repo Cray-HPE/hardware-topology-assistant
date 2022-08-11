@@ -566,9 +566,9 @@ func init() {
 	// is called directly, e.g.:
 	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	updateCmd.Flags().String("sls-url", "http://localhost:8376", "URL to System Layout Service (SLS)")
-	updateCmd.Flags().String("bss-url", "http://localhost:27778", "URL to Boot Script Service (BSS)")
-	updateCmd.Flags().String("hsm-url", "http://localhost:27779", "URL to Hardwrae State Manager (HSM)")
+	updateCmd.Flags().String("sls-url", "https://api-gw-service-nmn.local/apis/sls", "URL to System Layout Service (SLS)")
+	updateCmd.Flags().String("bss-url", "https://api-gw-service-nmn.local/apis/bss", "URL to Boot Script Service (BSS)")
+	updateCmd.Flags().String("hsm-url", "https://api-gw-service-nmn.local/apis/smd", "URL to Hardwrae State Manager (HSM)")
 
 	updateCmd.Flags().String("log-base-dir", ".", "Directory to contain the log folder generated from each run")
 	updateCmd.Flags().Bool("dry-run", false, "Perform a dry run and not make changes to the system")
