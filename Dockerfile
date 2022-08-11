@@ -32,10 +32,23 @@ COPY internal   $GOPATH/src/github.com/Cray-HPE/hardware-topology-assistant/inte
 COPY pkg        $GOPATH/src/github.com/Cray-HPE/hardware-topology-assistant/pkg
 COPY main.go    $GOPATH/src/github.com/Cray-HPE/hardware-topology-assistant/main.go
 COPY vendor     $GOPATH/src/github.com/Cray-HPE/hardware-topology-assistant/vendor
+# The following are needed to determine version information
+COPY .git       $GOPATH/src/github.com/Cray-HPE/hardware-topology-assistant/.git
+COPY .version   $GOPATH/src/github.com/Cray-HPE/hardware-topology-assistant/.version
 
 RUN set -ex \
+    && apk -U upgrade \
+    && apk add git \
+    && VERSION=$(cat $GOPATH/src/github.com/Cray-HPE/hardware-topology-assistant/.version) \
+    && BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+    && GIT_SHA=$(git -C $GOPATH/src/github.com/Cray-HPE/hardware-topology-assistant rev-parse HEAD) \
     && go env -w GO111MODULE=auto \
-    && go build -v -o /usr/local/bin/hardware-topology-assistant github.com/Cray-HPE/hardware-topology-assistant
+    && go build -v -o /usr/local/bin/hardware-topology-assistant \
+        -ldflags "\
+            -X github.com/Cray-HPE/hardware-topology-assistant/internal/version.version=${VERSION} \
+            -X github.com/Cray-HPE/hardware-topology-assistant/internal/version.buildDate=${BUILD_DATE} \
+            -X github.com/Cray-HPE/hardware-topology-assistant/internal/version.sha1ver=${GIT_SHA}" \
+        github.com/Cray-HPE/hardware-topology-assistant
 
 
 #
