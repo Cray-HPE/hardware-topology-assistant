@@ -30,14 +30,14 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "topology-tool",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Use:   "hardware-topology-assistant",
+	Short: "The hardware-topology-assistant is used to help simplify hardware changes to a system.",
+	Long: `The hardware-topology-assistant is used to help simplify hardware changes to a
+system, and make coordinated changes across CSM services to ensure the hardware
+changes are properly reflected.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Currently the only supported operation is adding river hardware (excluding
+management NCNs) such as additional river cabinets.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
@@ -58,8 +58,4 @@ func init() {
 	// will be global for your application.
 
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.topology-tool.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

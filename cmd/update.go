@@ -56,13 +56,39 @@ import (
 var updateCmd = &cobra.Command{
 	Use:   "update [CCJ_FILE]",
 	Args:  cobra.ExactArgs(1),
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Update the current hardware topology stored within SLS and BSS to match an updated CCJ (CSM Cabling JSON) file.",
+	Long: `Update the current hardware topology stored within SLS and BSS to match an
+updated CCJ (CSM Cabling JSON) file generated from a validated SHCD by CANU.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Overview of operations this command will attempt to perform:
+1. This tool will compare the new proposed state of the system from the CCJ
+   file with the current hardware topology present within SLS to determine the
+   hardware that has been added, modified, or removed.
+
+2. All identified new hardware will be added to SLS.
+
+3. IP addresses will be allocated within the correct networks and subnets for
+   any new hardware that requires an IP address. Such as management switches or
+   UANs.
+
+4. Update the BSS Global boot parameters if needed with updated host records.
+
+5. Update the BSS boot parameters for each Management NCN to ensure all expected
+   cabinet routes are present.
+
+Current Limitations:
+- Does not support adding of Management NCNs. Existing documented manual
+  procedure will need to be followed.
+- Does not support the removal of River hardware. Existing manual procedures
+  will need to be followed.
+- Does not support adding or removing liquid-cooled cabinets. Existing manual
+  procedures for adding liquid-cooled cabinets will need to be followed.
+
+If new application nodes are being added to the system, then this tool will
+automatically generate the application-node-metadata.yaml configuration for the
+user to fill any ~~FIXME~~ values for any new application nodes being added to
+the system regarding their desired HSM SubRole, and alias.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Initialize the global viper
 		v := viper.GetViper()
