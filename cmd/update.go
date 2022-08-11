@@ -123,6 +123,12 @@ the system regarding their desired HSM SubRole, and alias.
 		logWriter := io.MultiWriter(os.Stdout, logFile)
 		log.SetOutput(logWriter)
 
+		// Determine if this is a dryrun or not
+		dryRun := v.GetBool("dry-run")
+		if dryRun {
+			log.Println("Dryrun is enabled! No changes to the system will performed.")
+		}
+
 		// Setup HTTP client
 		httpClient := retryablehttp.NewClient()
 
@@ -480,8 +486,13 @@ the system regarding their desired HSM SubRole, and alias.
 		} else {
 			log.Printf("Adding new hardware to SLS (count %d)\n", len(topologyChanges.HardwareAdded))
 			for _, hardware := range topologyChanges.HardwareAdded {
-				if slsClient != nil {
-					slsClient.PutHardware(ctx, hardware)
+				if dryRun {
+					log.Printf("  Dry run enabled not creating hardware %s in SLS\n", hardware.Xname)
+				} else {
+					err := slsClient.PutHardware(ctx, hardware)
+					if err != nil {
+						log.Fatal("Error: ", err)
+					}
 				}
 			}
 		}
@@ -492,7 +503,9 @@ the system regarding their desired HSM SubRole, and alias.
 		} else {
 			log.Printf("Updating modified networks in SLS (count %d)\n", len(topologyChanges.ModifiedNetworks))
 			for _, modifiedNetwork := range topologyChanges.ModifiedNetworks {
-				if slsClient != nil {
+				if dryRun {
+					log.Printf("  Dry run enabled not modifying SLS network %s\n", modifiedNetwork.Name)
+				} else {
 					err := slsClient.PutNetwork(ctx, modifiedNetwork)
 					if err != nil {
 						log.Fatal("Error: ", err)
@@ -506,9 +519,14 @@ the system regarding their desired HSM SubRole, and alias.
 			log.Println("No BSS Global boot parameters changes required")
 		} else {
 			log.Println("Updating BSS Global boot parameters")
-			_, err := bssClient.UploadEntryToBSS(*bssGlobalBootParameters, http.MethodPut)
-			if err != nil {
-				log.Fatal("Error: ", err)
+
+			if dryRun {
+				log.Println("  Dry run enabled not modifying BSS")
+			} else {
+				_, err := bssClient.UploadEntryToBSS(*bssGlobalBootParameters, http.MethodPut)
+				if err != nil {
+					log.Fatal("Error: ", err)
+				}
 			}
 		}
 
@@ -521,9 +539,15 @@ the system regarding their desired HSM SubRole, and alias.
 				continue
 			}
 			log.Printf("Updating BSS boot parameters for %s\n", xname)
-			_, err := bssClient.UploadEntryToBSS(*managementNCNBootParams[xname], http.MethodPut)
-			if err != nil {
-				log.Fatal("Error: ", err)
+
+			if dryRun {
+				log.Println("  Dry run enabled not modifying BSS")
+			} else {
+				_, err := bssClient.UploadEntryToBSS(*managementNCNBootParams[xname], http.MethodPut)
+				if err != nil {
+					log.Fatal("Error: ", err)
+				}
+
 			}
 		}
 	},
@@ -547,6 +571,7 @@ func init() {
 	updateCmd.Flags().String("hsm-url", "http://localhost:27779", "URL to Hardwrae State Manager (HSM)")
 
 	updateCmd.Flags().String("log-base-dir", ".", "Directory to contain the log folder generated from each run")
+	updateCmd.Flags().Bool("dry-run", false, "Perform a dry run and not make changes to the system")
 
 	updateCmd.Flags().String("application-node-metadata", "", "YAML to control Application node identification during the SLS State generation. Only required if application nodes are being added to the system")
 }

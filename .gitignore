@@ -23,7 +23,7 @@ cmd/old
 *.tgz
 
 # Log files
-hardware-topolgoy-assistant_*
+hardware-topology-assistant_*
 
 # System seed files
 systems
