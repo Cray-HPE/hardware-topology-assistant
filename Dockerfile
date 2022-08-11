@@ -47,4 +47,6 @@ STOPSIGNAL SIGTERM
 
 COPY --from=builder /usr/local/bin/hardware-topology-assistant /usr/local/bin/hardware-topology-assistant
 
+WORKDIR /work
+
 ENTRYPOINT [ "hardware-topology-assistant" ]
