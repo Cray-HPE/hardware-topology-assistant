@@ -279,7 +279,6 @@ func AllocateIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias strin
 }
 
 func FreeIPsInStaticRange(slsSubnet sls_common.IPV4Subnet) (uint32, error) {
-	// TODO add the functionality for this
 	// Probably need to steal some of the logic for allocate IP. Need to share the logic between the two
 
 	subnet, err := netaddr.ParseIPPrefix(slsSubnet.CIDR)
