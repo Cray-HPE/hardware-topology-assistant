@@ -34,7 +34,7 @@ import (
 func DecodeHardwareExtraProperties(hardware sls_common.GenericHardware) (result interface{}, err error) {
 	// This can be filled out with types with some help of the following. Doesn't fully work, but gets you close
 	// $ cat pkg/sls-common/types.go | grep '^type Comptype' | sort
-	switch hardware.TypeString {
+	switch xnametypes.GetHMSType(hardware.Xname) {
 	case xnametypes.NodeBMCNic:
 		result = sls_common.ComptypeBmcNic{}
 	case xnametypes.CDUMgmtSwitch:
