@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/Cray-HPE/cray-site-init v1.24.0
-	github.com/Cray-HPE/hms-sls v1.23.0
+	github.com/Cray-HPE/hms-sls v1.24.0
 	github.com/Cray-HPE/hms-xname v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.7.1
 	github.com/mitchellh/mapstructure v1.5.0
@@ -50,5 +50,3 @@ require (
 	github.com/Cray-HPE/hms-bss v1.19.0
 	go4.org/intern v0.0.0-20220617035311-6925f38cc365 // indirect
 )
-
-replace github.com/Cray-HPE/hms-sls => ../Github/hms-sls

@@ -12,7 +12,7 @@ github.com/Cray-HPE/hms-bss/pkg/bssTypes
 # github.com/Cray-HPE/hms-shcd-parser v1.8.0
 ## explicit; go 1.16
 github.com/Cray-HPE/hms-shcd-parser/pkg/shcd-parser
-# github.com/Cray-HPE/hms-sls v1.23.0 => ../Github/hms-sls
+# github.com/Cray-HPE/hms-sls v1.24.0
 ## explicit; go 1.16
 github.com/Cray-HPE/hms-sls/pkg/sls-client
 github.com/Cray-HPE/hms-sls/pkg/sls-common
@@ -150,4 +150,3 @@ gopkg.in/yaml.v3
 # inet.af/netaddr v0.0.0-20220617031823-097006376321
 ## explicit; go 1.12
 inet.af/netaddr
-# github.com/Cray-HPE/hms-sls => ../Github/hms-sls

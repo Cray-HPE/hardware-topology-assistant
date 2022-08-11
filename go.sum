@@ -92,6 +92,9 @@ github.com/Cray-HPE/hms-s3 v1.10.1/go.mod h1:rZZmnKhZCkujpMHivyRr3YTbSQ+Wwvhjz6I
 github.com/Cray-HPE/hms-securestorage v1.12.2/go.mod h1:P4CMKqQVlx/lv+AdyEjNQubZw2FKNyo/IAtFNgQ3VuI=
 github.com/Cray-HPE/hms-shcd-parser v1.8.0 h1:ICePBQgPUOz5dG0n26NPXZb+Y3imX+VAyMMWdJAnGAY=
 github.com/Cray-HPE/hms-shcd-parser v1.8.0/go.mod h1:PNCl00A2oQGUyEYkTiCHj40kUIGj8DJs9rM+vE6E/8E=
+github.com/Cray-HPE/hms-sls v1.22.0/go.mod h1:uuUZbTkzMX9/EDydZ82c2BztdeWvPEPjJmcJNsJB3l0=
+github.com/Cray-HPE/hms-sls v1.24.0 h1:Sg3RM9VFpK7Fbgu4DS3zCilarcBSLciWXsOiLcRraSY=
+github.com/Cray-HPE/hms-sls v1.24.0/go.mod h1:XKGw18eCGS3oJwsYpw8B+QzNUhgHXLnbr2kgNUNUYrg=
 github.com/Cray-HPE/hms-smd v1.30.9/go.mod h1:9TFpxIiPnmgBphq0QfFt1BmKiuSZ8VXu5N7A5EJz6L4=
 github.com/Cray-HPE/hms-smd v1.51.0/go.mod h1:7J7taeRXmceyLPHdKlLbucb10lqTrJxTUo3RhaTGMhs=
 github.com/Cray-HPE/hms-xname v1.1.0 h1:y/JEM2PbBaD8VbU7u85+/YIugf1Evji59z5IeSffeO8=
@@ -418,6 +421,7 @@ github.com/hashicorp/go-multierror v1.1.0/go.mod h1:spPvp8C1qA32ftKqdAHm4hHTbPw+
 github.com/hashicorp/go-plugin v1.0.1/go.mod h1:++UyYGoz3o5w9ZzAdZxtQKrWWP+iqPBn3cQptSMzBuY=
 github.com/hashicorp/go-retryablehttp v0.5.3/go.mod h1:9B5zBasrRhHXnJnui7y6sL7es7NDiJgTc6Er0maI1Xs=
 github.com/hashicorp/go-retryablehttp v0.5.4/go.mod h1:9B5zBasrRhHXnJnui7y6sL7es7NDiJgTc6Er0maI1Xs=
+github.com/hashicorp/go-retryablehttp v0.6.0/go.mod h1:EM1UNuajSSS84RdcM8GK0q0UIPtYqPHVLu9oE2Wm8FY=
 github.com/hashicorp/go-retryablehttp v0.7.0/go.mod h1:vAew36LZh98gCBJNLH42IQ1ER/9wtLZZ8meHqQvEYWY=
 github.com/hashicorp/go-retryablehttp v0.7.1 h1:sUiuQAnLlbvmExtFQs72iFW/HXeUn8Z1aJLQ4LJJbTQ=
 github.com/hashicorp/go-retryablehttp v0.7.1/go.mod h1:vAew36LZh98gCBJNLH42IQ1ER/9wtLZZ8meHqQvEYWY=
