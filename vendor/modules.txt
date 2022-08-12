@@ -1,0 +1,152 @@
+# github.com/Cray-HPE/cray-site-init v1.24.0
+## explicit; go 1.18
+github.com/Cray-HPE/cray-site-init/internal/files
+github.com/Cray-HPE/cray-site-init/pkg/csi
+github.com/Cray-HPE/cray-site-init/pkg/ipam
+# github.com/Cray-HPE/hms-base/v2 v2.0.1
+## explicit; go 1.16
+github.com/Cray-HPE/hms-base/v2
+# github.com/Cray-HPE/hms-bss v1.19.0
+## explicit; go 1.16
+github.com/Cray-HPE/hms-bss/pkg/bssTypes
+# github.com/Cray-HPE/hms-shcd-parser v1.8.0
+## explicit; go 1.16
+github.com/Cray-HPE/hms-shcd-parser/pkg/shcd-parser
+# github.com/Cray-HPE/hms-sls v1.24.0
+## explicit; go 1.16
+github.com/Cray-HPE/hms-sls/pkg/sls-client
+github.com/Cray-HPE/hms-sls/pkg/sls-common
+# github.com/Cray-HPE/hms-xname v1.1.0
+## explicit; go 1.17
+github.com/Cray-HPE/hms-xname/xnames
+github.com/Cray-HPE/hms-xname/xnametypes
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
+# github.com/fsnotify/fsnotify v1.5.4
+## explicit; go 1.16
+github.com/fsnotify/fsnotify
+# github.com/gocarina/gocsv v0.0.0-20200925213129-04be9ee2e1a2
+## explicit; go 1.13
+github.com/gocarina/gocsv
+# github.com/hashicorp/go-cleanhttp v0.5.2
+## explicit; go 1.13
+github.com/hashicorp/go-cleanhttp
+# github.com/hashicorp/go-retryablehttp v0.7.1
+## explicit; go 1.13
+github.com/hashicorp/go-retryablehttp
+# github.com/hashicorp/hcl v1.0.0
+## explicit
+github.com/hashicorp/hcl
+github.com/hashicorp/hcl/hcl/ast
+github.com/hashicorp/hcl/hcl/parser
+github.com/hashicorp/hcl/hcl/printer
+github.com/hashicorp/hcl/hcl/scanner
+github.com/hashicorp/hcl/hcl/strconv
+github.com/hashicorp/hcl/hcl/token
+github.com/hashicorp/hcl/json/parser
+github.com/hashicorp/hcl/json/scanner
+github.com/hashicorp/hcl/json/token
+# github.com/inconshreveable/mousetrap v1.0.0
+## explicit
+github.com/inconshreveable/mousetrap
+# github.com/magiconair/properties v1.8.6
+## explicit; go 1.13
+github.com/magiconair/properties
+# github.com/mitchellh/mapstructure v1.5.0
+## explicit; go 1.14
+github.com/mitchellh/mapstructure
+# github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e
+## explicit; go 1.12
+# github.com/pelletier/go-toml v1.9.5
+## explicit; go 1.12
+github.com/pelletier/go-toml
+# github.com/pelletier/go-toml/v2 v2.0.1
+## explicit; go 1.16
+github.com/pelletier/go-toml/v2
+github.com/pelletier/go-toml/v2/internal/ast
+github.com/pelletier/go-toml/v2/internal/danger
+github.com/pelletier/go-toml/v2/internal/tracker
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
+# github.com/spf13/afero v1.8.2
+## explicit; go 1.13
+github.com/spf13/afero
+github.com/spf13/afero/mem
+# github.com/spf13/cast v1.5.0
+## explicit; go 1.18
+github.com/spf13/cast
+# github.com/spf13/cobra v1.5.0
+## explicit; go 1.15
+github.com/spf13/cobra
+# github.com/spf13/jwalterweatherman v1.1.0
+## explicit
+github.com/spf13/jwalterweatherman
+# github.com/spf13/pflag v1.0.5
+## explicit; go 1.12
+github.com/spf13/pflag
+# github.com/spf13/viper v1.12.0
+## explicit; go 1.17
+github.com/spf13/viper
+github.com/spf13/viper/internal/encoding
+github.com/spf13/viper/internal/encoding/dotenv
+github.com/spf13/viper/internal/encoding/hcl
+github.com/spf13/viper/internal/encoding/ini
+github.com/spf13/viper/internal/encoding/javaproperties
+github.com/spf13/viper/internal/encoding/json
+github.com/spf13/viper/internal/encoding/toml
+github.com/spf13/viper/internal/encoding/yaml
+# github.com/stretchr/testify v1.7.1
+## explicit; go 1.13
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
+github.com/stretchr/testify/suite
+# github.com/subosito/gotenv v1.3.0
+## explicit; go 1.18
+github.com/subosito/gotenv
+# go.uber.org/atomic v1.7.0
+## explicit; go 1.13
+go.uber.org/atomic
+# go.uber.org/multierr v1.6.0
+## explicit; go 1.12
+go.uber.org/multierr
+# go.uber.org/zap v1.21.0
+## explicit; go 1.13
+go.uber.org/zap
+go.uber.org/zap/buffer
+go.uber.org/zap/internal/bufferpool
+go.uber.org/zap/internal/color
+go.uber.org/zap/internal/exit
+go.uber.org/zap/zapcore
+# go4.org/intern v0.0.0-20220617035311-6925f38cc365
+## explicit; go 1.13
+go4.org/intern
+# go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760
+## explicit; go 1.11
+go4.org/unsafe/assume-no-moving-gc
+# golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+## explicit; go 1.17
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+# golang.org/x/text v0.3.7
+## explicit; go 1.17
+golang.org/x/text/transform
+golang.org/x/text/unicode/norm
+# gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
+## explicit
+# gopkg.in/ini.v1 v1.66.4
+## explicit
+gopkg.in/ini.v1
+# gopkg.in/yaml.v2 v2.4.0
+## explicit; go 1.15
+gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0
+## explicit
+gopkg.in/yaml.v3
+# inet.af/netaddr v0.0.0-20220617031823-097006376321
+## explicit; go 1.12
+inet.af/netaddr
