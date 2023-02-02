@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -246,12 +246,16 @@ func AllocateIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias strin
 
 	// Verify this switch is unique within the subnet
 	for _, ipReservation := range slsSubnet.IPReservations {
-		if ipReservation.Name == alias {
-			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with name (%v) already exits", alias)
-		}
+		matchingAlias := ipReservation.Name == alias
+		matchingXName := ipReservation.Comment == xname.String()
 
-		if ipReservation.Comment == xname.String() {
-			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with xname (%v) already exits", xname.String())
+		if matchingAlias && matchingXName {
+			// IP reservation already exists
+			return sls_common.IPReservation{}, nil
+		} else if ipReservation.Name == alias {
+			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with name (%v) already exits on (%v)", alias, ipReservation.Comment)
+		} else if ipReservation.Comment == xname.String() {
+			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with xname (%v) already exits with name (%v)", xname.String(), ipReservation.Name)
 		}
 	}
 

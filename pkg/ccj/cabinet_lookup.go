@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -95,8 +95,8 @@ func DetermineCabinetLookup(paddle Paddle) (configs.CabinetLookup, error) {
 	//
 	riverCabinets := map[string]bool{}
 	for _, topologyNode := range paddle.Topology {
-		// If this is located with in a CDU skip it
-		if strings.HasPrefix(strings.ToLower(topologyNode.Location.Rack), "cdu") {
+		// If this component is not located in a cabinet (such as an CDU), then skip it
+		if !strings.HasPrefix(strings.ToLower(topologyNode.Location.Rack), "x") {
 			continue
 		}
 

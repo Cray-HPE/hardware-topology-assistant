@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -58,7 +58,7 @@ func extractNumber(numberRaw string) (int, error) {
 	return number, nil
 }
 
-func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeMetadata configs.ApplicationNodeMetadataMap, switchAliasesOverrides map[string][]string) (sls_common.SLSState, error) {
+func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLookup, applicationNodeMetadata configs.ApplicationNodeMetadataMap, switchAliasesOverrides map[string][]string, ignoreUnknownCANUHardwareArchitectures bool) (sls_common.SLSState, error) {
 	// Iterate over the paddle file to build of SLS data
 	allHardware := map[string]sls_common.GenericHardware{}
 	for _, topologyNode := range paddle.Topology {
@@ -66,8 +66,10 @@ func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLook
 		// Build the SLS hardware representation
 		//
 		hardware, err := BuildSLSHardware(topologyNode, paddle, cabinetLookup, applicationNodeMetadata, switchAliasesOverrides)
-		if err != nil {
-			panic(err)
+		if err != nil && ignoreUnknownCANUHardwareArchitectures && strings.Contains(err.Error(), "unknown architecture type") {
+			log.Printf("WARNING %s", err.Error())
+		} else if err != nil {
+			log.Fatalf("Error %v", err)
 		}
 
 		// Ignore empty hardware
@@ -163,6 +165,9 @@ func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup co
 	// TODO use CANU files for lookup
 	// ALso look at using type
 	switch topologyNode.Architecture {
+	case "kvm":
+		// TODO SLS does not know anything about KVM, because HMS software doesn't support them.
+		fallthrough
 	case "cec":
 		// TODO SLS does not know anything about CEC, because HMS software doesn't support them.
 		return sls_common.GenericHardware{}, nil
@@ -179,7 +184,8 @@ func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup co
 			// This CDU MgmtSwitch is present in a river cabinet.
 			// This is normally seen on newer TDS/Hill cabinet systems
 			return buildSLSMgmtHLSwitch(topologyNode, switchAliasesOverrides)
-		} else if strings.HasPrefix(topologyNode.Location.Rack, "cdu") {
+		} else {
+			// Otherwise the switch is in a CDU cabinet
 			return buildSLSCDUMgmtSwitch(topologyNode, switchAliasesOverrides)
 		}
 	case "customer_edge_router":
@@ -199,7 +205,7 @@ func BuildSLSHardware(topologyNode TopologyNode, paddle Paddle, cabinetLookup co
 		}
 	}
 
-	return sls_common.GenericHardware{}, fmt.Errorf("unknown architecture type %s", topologyNode.Architecture)
+	return sls_common.GenericHardware{}, fmt.Errorf("unknown architecture type %s for CANU common name %s", topologyNode.Architecture, topologyNode.CommonName)
 }
 
 func buildSLSPDUController(location Location) (sls_common.GenericHardware, error) {

@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -47,6 +47,11 @@ type TopologyEngine struct {
 type EngineInput struct {
 	Paddle                  ccj.Paddle
 	ApplicationNodeMetadata configs.ApplicationNodeMetadataMap
+
+	// Advanced options to control when a the topology engine finds a despcrency.
+	IgnoreRemovedHardware                  bool
+	HardwareToIgnore                       []string
+	IgnoreUnknownCANUHardwareArchitectures bool
 
 	CurrentSLSState sls_common.SLSState
 }
@@ -111,7 +116,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	}
 
 	// Build up the expected SLS hardware state from the provided CCJ
-	expectedSLSState, err := ccj.BuildExpectedHardwareState(te.Input.Paddle, cabinetLookup, te.Input.ApplicationNodeMetadata, currentSwitchAliases)
+	expectedSLSState, err := ccj.BuildExpectedHardwareState(te.Input.Paddle, cabinetLookup, te.Input.ApplicationNodeMetadata, currentSwitchAliases, te.Input.IgnoreUnknownCANUHardwareArchitectures)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expected SLS hardware state: %w", err)
 	}
@@ -138,6 +143,18 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to filter out management NCNs from current SLS hardware state: %w", err)
 	}
+
+	// Prune out ignored hardware
+	hardwareIgnoreLookupMap := map[string]bool{}
+	for _, xname := range te.Input.HardwareToIgnore {
+		hardwareIgnoreLookupMap[xname] = true
+	}
+	expectedSLSState.Hardware, _ = sls.FilterHardware(expectedSLSState.Hardware, func(hardware sls_common.GenericHardware) (bool, error) {
+		return !hardwareIgnoreLookupMap[hardware.Xname], nil
+	})
+	te.Input.CurrentSLSState.Hardware, _ = sls.FilterHardware(te.Input.CurrentSLSState.Hardware, func(hardware sls_common.GenericHardware) (bool, error) {
+		return !hardwareIgnoreLookupMap[hardware.Xname], nil
+	})
 
 	//
 	// Compare the current hardware state with the expected hardware state
@@ -171,7 +188,7 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 	//
 	// This is put in place as the first use for this tool is to add river cabinets to the system.
 	//
-	if len(hardwareRemoved) != 0 {
+	if len(hardwareRemoved) != 0 && !te.Input.IgnoreRemovedHardware {
 		return nil, fmt.Errorf("refusing to continue, found hardware was removed from the system. Please reconcile the current system state with the systems CCJ/SHCD")
 	}
 
@@ -313,6 +330,12 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 				xname := xnames.FromString(hardware.Xname)
 				if xname == nil {
 					return nil, fmt.Errorf("unable to parse switch xname (%s)", hardware.Xname)
+				}
+
+				// Check to see if an IP addresses has been already allocated
+				if existingIPReservation, ok := slsSubnet.ReservationsByName()[aliases[0]]; ok {
+					log.Printf("%s (%s): Found existing IP allocation %s in subnet network_hardware in network %s\n", hardware.Xname, aliases[0], existingIPReservation.IPAddress.String(), networkName)
+					continue
 				}
 
 				// Allocate the IP!
@@ -474,9 +497,15 @@ func (te *TopologyEngine) DetermineChanges() (*TopologyChanges, error) {
 				return nil, fmt.Errorf("unable to parse UAN xname (%s)", uan.xname)
 			}
 
+			if existingIPReservation, ok := slsSubnet.ReservationsByName()[uan.alias]; ok {
+				log.Printf("%s (%s): Found existing IP allocation %s on the %s network\n", uan.xname, uan.alias, existingIPReservation.IPAddress, networkName)
+				continue
+			}
+
+			// Allocate the IP!
 			ipReservation, err := ipam.AllocateIP(slsSubnet, xname, uan.alias)
 			if err != nil {
-				return nil, fmt.Errorf("unable to allocate IP for UAN (%s) in network (%s): %w", xname.String(), networkName, err)
+				return nil, fmt.Errorf("unable to allocate IP for UAN %s (%s) in network (%s): %w", xname.String(), uan.alias, networkName, err)
 			}
 			ipReservationsAdded = append(ipReservationsAdded, IPReservationChange{
 				NetworkName:    networkName,

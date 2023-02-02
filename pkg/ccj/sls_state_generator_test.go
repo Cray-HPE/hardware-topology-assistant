@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -341,7 +341,7 @@ func (suite *SLSStateGeneratorTestSuite) TestMgmtHLSwitch_Arista() {
 	suite.Equal(expectedHardware, hardware)
 }
 
-func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Aruba() {
+func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Aruba_CDU_Prefix() {
 	topologyNode := TopologyNode{
 		CommonName:   "sw-cdu-002",
 		ID:           0,
@@ -366,7 +366,32 @@ func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Aruba() {
 	suite.Equal(expectedHardware, hardware)
 }
 
-func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Dell() {
+func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Aruba_D_Prefix() {
+	topologyNode := TopologyNode{
+		CommonName:   "sw-cdu-002",
+		ID:           0,
+		Architecture: "mountain_compute_leaf",
+		Model:        "8360_JL706A",
+		Type:         "switch",
+		Vendor:       "aruba",
+		Location: Location{
+			Rack:      "d100",
+			Elevation: "u2",
+		},
+	}
+
+	hardware, err := buildSLSCDUMgmtSwitch(topologyNode, nil)
+	suite.NoError(err)
+
+	expectedHardware := sls_common.NewGenericHardware("d100w2", sls_common.ClassMountain, sls_common.ComptypeCDUMgmtSwitch{
+		Brand:   "Aruba",
+		Model:   "8360_JL706A",
+		Aliases: []string{"sw-cdu-002"},
+	})
+	suite.Equal(expectedHardware, hardware)
+}
+
+func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Dell_CDU_Prefix() {
 	topologyNode := TopologyNode{
 		CommonName:   "sw-cdu-002",
 		ID:           0,
@@ -384,6 +409,31 @@ func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Dell() {
 	suite.NoError(err)
 
 	expectedHardware := sls_common.NewGenericHardware("d0w2", sls_common.ClassMountain, sls_common.ComptypeCDUMgmtSwitch{
+		Brand:   "Dell",
+		Model:   "S4148T-ON",
+		Aliases: []string{"sw-cdu-002"},
+	})
+	suite.Equal(expectedHardware, hardware)
+}
+
+func (suite *SLSStateGeneratorTestSuite) TestCDUMgmtSwitch_Dell_D_Prefix() {
+	topologyNode := TopologyNode{
+		CommonName:   "sw-cdu-002",
+		ID:           0,
+		Architecture: "mountain_compute_leaf",
+		Model:        "S4148T-ON",
+		Type:         "switch",
+		Vendor:       "dell",
+		Location: Location{
+			Rack:      "d100",
+			Elevation: "u2",
+		},
+	}
+
+	hardware, err := buildSLSCDUMgmtSwitch(topologyNode, nil)
+	suite.NoError(err)
+
+	expectedHardware := sls_common.NewGenericHardware("d100w2", sls_common.ClassMountain, sls_common.ComptypeCDUMgmtSwitch{
 		Brand:   "Dell",
 		Model:   "S4148T-ON",
 		Aliases: []string{"sw-cdu-002"},
