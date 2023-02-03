@@ -252,9 +252,9 @@ func AllocateIP(slsSubnet sls_common.IPV4Subnet, xname xnames.Xname, alias strin
 		if matchingAlias && matchingXName {
 			// IP reservation already exists
 			return sls_common.IPReservation{}, nil
-		} else if ipReservation.Name == alias {
+		} else if matchingAlias {
 			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with name (%v) already exits on (%v)", alias, ipReservation.Comment)
-		} else if ipReservation.Comment == xname.String() {
+		} else if matchingXName {
 			return sls_common.IPReservation{}, fmt.Errorf("ip reservation with xname (%v) already exits with name (%v)", xname.String(), ipReservation.Name)
 		}
 	}
