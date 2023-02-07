@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -28,8 +28,9 @@ import "sort"
 type ApplicationNodeMetadataMap map[string]ApplicationNodeMetadata
 
 type ApplicationNodeMetadata struct {
-	SubRole string
-	Aliases []string
+	CANUCommonName string   `yaml:"canu_common_name,omitempty"`
+	SubRole        string   `yaml:"subrole"`
+	Aliases        []string `yaml:"aliases"`
 }
 
 func (m ApplicationNodeMetadataMap) AllAliases() map[string][]string {

@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -142,7 +142,7 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 	// Here's an example:
 	routeFiles := make(map[string][]string)
 
-	for _, neededNetwork := range []string{"cmn", "hmn", "nmn"} {
+	for _, neededNetwork := range []string{"nmn", "hmn"} {
 		ipamNetwork := ipamNetworks[neededNetwork]
 
 		for _, network := range networks {
@@ -166,6 +166,11 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 					_, ipv4Net, err := net.ParseCIDR(subnet.CIDR)
 					if err != nil {
 						log.Fatalf("Failed to parse SLS network CIDR (%s): %s", subnet.CIDR, err)
+					}
+
+					// Ignore NMN UAI subnet
+					if strings.ToLower(network.Name) == "nmn" && subnet.Name == "uai_macvlan" {
+						continue
 					}
 
 					// If the gateway fits in the CIDR then we don't need it, the OS will give us that for free.
@@ -204,7 +209,7 @@ func GetWriteFiles(networks sls_common.NetworkArray, ipamNetworks CloudInitIPAM)
 	for networkName := range routeFiles {
 		networkNames = append(networkNames, networkName)
 	}
-	sort.Strings(networkNames)
+	sort.Sort(sort.Reverse(sort.StringSlice(networkNames)))
 
 	// We now have all the write files, let's make objects for them.
 	for _, networkName := range networkNames {

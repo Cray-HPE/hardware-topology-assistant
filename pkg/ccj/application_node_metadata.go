@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -57,8 +57,9 @@ func BuildApplicationNodeMetadata(paddle Paddle, existingMetadata configs.Applic
 		} else {
 			// This is a new application node, need to have some information filled in!
 			metadata[xname.String()] = configs.ApplicationNodeMetadata{
-				SubRole: "~~FIXME~~",
-				Aliases: []string{"~~FIXME~~"},
+				CANUCommonName: topologyNode.CommonName, // This field makes it easy to see what a node is
+				SubRole:        "~~FIXME~~",
+				Aliases:        []string{"~~FIXME~~"},
 			}
 		}
 

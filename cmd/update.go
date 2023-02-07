@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -371,9 +371,12 @@ the system regarding their desired HSM SubRole, and alias.
 		//
 		topologyEngine := engine.TopologyEngine{
 			Input: engine.EngineInput{
-				Paddle:                  paddle,
-				ApplicationNodeMetadata: applicationNodeMetadata,
-				CurrentSLSState:         currentSLSState,
+				Paddle:                                 paddle,
+				ApplicationNodeMetadata:                applicationNodeMetadata,
+				CurrentSLSState:                        currentSLSState,
+				HardwareToIgnore:                       v.GetStringSlice("hardware-ignore-list"),
+				IgnoreRemovedHardware:                  v.GetBool("ignore-removed-hardware"),
+				IgnoreUnknownCANUHardwareArchitectures: v.GetBool("ignore-unknown-canu-hardware-architectures"),
 			},
 		}
 
@@ -481,6 +484,59 @@ the system regarding their desired HSM SubRole, and alias.
 		}
 
 		//
+		// Write out new desired state
+		//
+
+		// Merge the added hardware to the current SLS state
+		for _, hardware := range topologyChanges.HardwareAdded {
+			currentSLSState.Hardware[hardware.Xname] = hardware
+		}
+
+		// Merge in modified networks
+		for name, network := range topologyChanges.ModifiedNetworks {
+			currentSLSState.Networks[name] = network
+		}
+
+		// Write out modified SLS state
+		modifiedSLSStateFile := path.Join(logDirectory, "modified_sls_state.json")
+		modifiedSLSStateRaw, err := json.MarshalIndent(currentSLSState, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := ioutil.WriteFile(modifiedSLSStateFile, modifiedSLSStateRaw, 0600); err != nil {
+			log.Fatal(err)
+		}
+
+		// Identify modified BSS boot parameters
+		modifiedBootParameters := map[string]bssTypes.BootParams{}
+
+		if modifiedGlobalBootParameters {
+			modifiedBootParameters["Global"] = *bssGlobalBootParameters
+		}
+		for _, managementNCN := range managementNCNs {
+
+			if !modifiedManagementNCNBootParams[managementNCN.Xname] {
+				continue
+			}
+
+			modifiedBootParameters[managementNCN.Xname] = *managementNCNBootParams[managementNCN.Xname]
+		}
+
+		// Write out modified BSS boot parameters
+		for name, bootParameters := range modifiedBootParameters {
+			modifiedBSSBootParametersFile := path.Join(logDirectory, fmt.Sprintf("modified_bss_bootparameters_%s.json", name))
+			modifiedBSSBootParametersRaw, err := json.MarshalIndent(bootParameters, "", "  ")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if err := ioutil.WriteFile(modifiedBSSBootParametersFile, modifiedBSSBootParametersRaw, 0600); err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		//
 		// Perform changes to SLS/HSM/BSS on the system to reflect the updated state.
 		//
 
@@ -570,14 +626,22 @@ func init() {
 	// is called directly, e.g.:
 	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	updateCmd.Flags().String("sls-url", "https://api-gw-service-nmn.local/apis/sls", "URL to System Layout Service (SLS)")
-	updateCmd.Flags().String("bss-url", "https://api-gw-service-nmn.local/apis/bss", "URL to Boot Script Service (BSS)")
-	updateCmd.Flags().String("hsm-url", "https://api-gw-service-nmn.local/apis/smd", "URL to Hardwrae State Manager (HSM)")
+	// This ensures the flags are displayed in teh order shown below
+	updateCmd.Flags().SortFlags = false
 
-	updateCmd.Flags().String("log-base-dir", ".", "Directory to contain the log folder generated from each run")
 	updateCmd.Flags().Bool("dry-run", false, "Perform a dry run and not make changes to the system")
-
 	updateCmd.Flags().String("application-node-metadata", "", "YAML to control Application node identification during the SLS State generation. Only required if application nodes are being added to the system")
+	updateCmd.Flags().String("log-base-dir", ".", "Directory to contain the log folder generated from each run")
+
+	updateCmd.Flags().Bool("ignore-unknown-canu-hardware-architectures", false, "Advanced option: Ignore CANU hardware architectures that are unknown to this tool.")
+	updateCmd.Flags().Bool("ignore-removed-hardware", false, "Advanced option: Ignore hardware removed from the system, and only add new hardware to the system")
+	updateCmd.Flags().StringSlice("hardware-ignore-list", []string{}, "Advanced option: Hardware to ignore specified as xnames. Multiple xnames can be specified in a comma separated list")
+
+	updateCmd.Flags().String("sls-url", "https://api-gw-service-nmn.local/apis/sls", "Advanced option: URL to System Layout Service (SLS)")
+	updateCmd.Flags().String("bss-url", "https://api-gw-service-nmn.local/apis/bss", "Advanced option: URL to Boot Script Service (BSS)")
+	updateCmd.Flags().String("hsm-url", "https://api-gw-service-nmn.local/apis/smd", "Advanced option: URL to Hardware State Manager (HSM)")
+
+	// updateCmd.Flags().String("csm-version", "", "Targeted CSM version")
 }
 
 func setupContext() context.Context {
