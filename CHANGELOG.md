@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - 2023-05-04
 ### Changed
-* Rebuilt image with latest version of alpine 3.16, which is 3.16.5.
+* Updated the go4.org assume-no-moving-gc depenedency so that the unittests build with newer golang.
 
 ## [0.2.0] - 2023-02-02
 
