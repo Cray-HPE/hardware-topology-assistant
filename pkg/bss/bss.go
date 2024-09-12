@@ -49,6 +49,10 @@ func GetIPAMForNCN(managementNCN sls_common.GenericHardware,
 	// For each of the required networks, go build an IPAMNetwork object and add that to the ipamNetworks
 	// above.
 	for _, ipamNetwork := range append(IPAMNetworks[:], extraSLSNetworks...) {
+		// the chn causes issues with the IPAM so skip it
+		if ipamNetwork == "chn" {
+			continue
+		}
 		// Search SLS networks for this network.
 		var targetSLSNetwork *sls_common.Network
 		for _, slsNetwork := range networks {
