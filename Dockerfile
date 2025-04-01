@@ -1,6 +1,6 @@
 # MIT License
 #
-# (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2022,2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -24,7 +24,7 @@
 #
 # Builder image
 #
-FROM artifactory.algol60.net/docker.io/library/golang:1.17-alpine AS builder
+FROM artifactory.algol60.net/docker.io/library/golang:1.24-alpine AS builder
 
 # Copy all the necessary files to the image.
 COPY cmd        $GOPATH/src/github.com/Cray-HPE/hardware-topology-assistant/cmd
@@ -54,7 +54,7 @@ RUN set -ex \
 #
 # Final image
 #
-FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.16
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21
 LABEL maintainer="Hewlett Packard Enterprise"
 STOPSIGNAL SIGTERM
 

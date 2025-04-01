@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Cray-HPE/cray-site-init/pkg/csi"
+	"github.com/Cray-HPE/cray-site-init/pkg/sls"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 	"github.com/stretchr/testify/suite"
@@ -38,9 +38,9 @@ type CabinetLookupTestSuite struct {
 
 func (suite *CabinetLookupTestSuite) TestCabinetExists() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	for _, cabinet := range []string{"x1000", "x3000", "x3001", "x9000"} {
@@ -50,9 +50,9 @@ func (suite *CabinetLookupTestSuite) TestCabinetExists() {
 
 func (suite *CabinetLookupTestSuite) TestCabinetExists_NotFound() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	for _, cabinet := range []string{"x1001", "x3002", "x9001"} {
@@ -63,9 +63,9 @@ func (suite *CabinetLookupTestSuite) TestCabinetExists_NotFound() {
 
 func (suite *CabinetLookupTestSuite) TestCabinetClass() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	// River
@@ -86,9 +86,9 @@ func (suite *CabinetLookupTestSuite) TestCabinetClass() {
 
 func (suite *CabinetLookupTestSuite) TestCabinetClass_NotFound() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	for _, cabinet := range []string{"x1001", "x3002", "x9001"} {
@@ -99,9 +99,9 @@ func (suite *CabinetLookupTestSuite) TestCabinetClass_NotFound() {
 
 func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_RiverCabinet() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	ok, err := cabinetLookup.CanCabinetContainAirCooledHardware("x3000")
@@ -111,9 +111,9 @@ func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_Rive
 
 func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_MountainCabinet() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	ok, err := cabinetLookup.CanCabinetContainAirCooledHardware("x1000")
@@ -123,9 +123,9 @@ func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_Moun
 
 func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_HillCabinet() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	ok, err := cabinetLookup.CanCabinetContainAirCooledHardware("x9000")
@@ -137,10 +137,10 @@ func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_Hill
 //
 // func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_EX2500_NoAirCooledChassis() {
 // 	cabinetLookup := CabinetLookup{
-// 		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-// 		csi.CabinetKindHill:     []string{"x9000"},
-// 		csi.CabinetKindMountain: []string{"x1000"},
-// 		csi.CabinetKindEX2500:   []string{"x8000"},
+// 		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+// 		sls.CabinetKindHill:     []string{"x9000"},
+// 		sls.CabinetKindMountain: []string{"x1000"},
+// 		sls.CabinetKindEX2500:   []string{"x8000"},
 // 	}
 //
 // 	ok, err := cabinetLookup.CanCabinetContainAirCooledHardware("x8000")
@@ -150,10 +150,10 @@ func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_Hill
 //
 // func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_EX2500_AirCooledChassis() {
 // 	cabinetLookup := CabinetLookup{
-// 		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-// 		csi.CabinetKindHill:     []string{"x9000"},
-// 		csi.CabinetKindMountain: []string{"x1000"},
-// 		csi.CabinetKindEX2500:   []string{"x8000"},
+// 		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+// 		sls.CabinetKindHill:     []string{"x9000"},
+// 		sls.CabinetKindMountain: []string{"x1000"},
+// 		sls.CabinetKindEX2500:   []string{"x8000"},
 // 	}
 //
 // 	ok, err := cabinetLookup.CanCabinetContainAirCooledHardware("x8000")
@@ -163,9 +163,9 @@ func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_Hill
 
 func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_UnknownCabinet() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	ok, err := cabinetLookup.CanCabinetContainAirCooledHardware("x1234")
@@ -175,9 +175,9 @@ func (suite *CabinetLookupTestSuite) TestCanCabinetContainAirCooledHardware_Unkn
 
 func (suite *CabinetLookupTestSuite) TestDetermineRiverChassis_RiverCabinet() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	chassis, err := cabinetLookup.DetermineRiverChassis(xnames.Cabinet{Cabinet: 3000})
@@ -187,9 +187,9 @@ func (suite *CabinetLookupTestSuite) TestDetermineRiverChassis_RiverCabinet() {
 
 func (suite *CabinetLookupTestSuite) TestDetermineRiverChassis_HillCabinet() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	_, err := cabinetLookup.DetermineRiverChassis(xnames.Cabinet{Cabinet: 9000})
@@ -200,9 +200,9 @@ func (suite *CabinetLookupTestSuite) TestDetermineRiverChassis_HillCabinet() {
 //
 // func (suite *CabinetLookupTestSuite) TestDetermineRiverChassis_EX2500Cabinet() {
 // 	cabinetLookup := CabinetLookup{
-// 		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-// 		csi.CabinetKindHill:     []string{"x9000"},
-// 		csi.CabinetKindMountain: []string{"x1000"},
+// 		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+// 		sls.CabinetKindHill:     []string{"x9000"},
+// 		sls.CabinetKindMountain: []string{"x1000"},
 // 	}
 //
 // 	chassis, err := cabinetLookup.DetermineRiverChassis(xnames.Cabinet{Cabinet: 5004})
@@ -212,9 +212,9 @@ func (suite *CabinetLookupTestSuite) TestDetermineRiverChassis_HillCabinet() {
 
 func (suite *CabinetLookupTestSuite) TestDetermineRiverChassis_MountainCabinet() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	_, err := cabinetLookup.DetermineRiverChassis(xnames.Cabinet{Cabinet: 1000})
@@ -223,9 +223,9 @@ func (suite *CabinetLookupTestSuite) TestDetermineRiverChassis_MountainCabinet()
 
 func (suite *CabinetLookupTestSuite) TestDetermineRiverChassis_InvalidCabinet() {
 	cabinetLookup := CabinetLookup{
-		csi.CabinetKindRiver:    []string{"x3000", "x3001"},
-		csi.CabinetKindHill:     []string{"x9000"},
-		csi.CabinetKindMountain: []string{"x1000"},
+		sls.CabinetKindRiver:    []string{"x3000", "x3001"},
+		sls.CabinetKindHill:     []string{"x9000"},
+		sls.CabinetKindMountain: []string{"x1000"},
 	}
 
 	_, err := cabinetLookup.DetermineRiverChassis(xnames.Cabinet{Cabinet: 1234})

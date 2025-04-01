@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023,2025 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -29,7 +29,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Cray-HPE/cray-site-init/pkg/csi"
+	"github.com/Cray-HPE/cray-site-init/pkg/cli/config/initialize"
 	"github.com/Cray-HPE/hardware-topology-assistant/pkg/configs"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
@@ -79,7 +79,7 @@ func BuildExpectedHardwareState(paddle Paddle, cabinetLookup configs.CabinetLook
 
 		// Verify cabinet exists (ignore CDUs)
 		if strings.HasPrefix(hardware.Xname, "x") {
-			cabinetXname, err := csi.CabinetForXname(hardware.Xname)
+			cabinetXname, err := initialize.CabinetForXname(hardware.Xname)
 			if err != nil {
 				panic(err)
 			}

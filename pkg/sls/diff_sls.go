@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022,2025 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/Cray-HPE/cray-site-init/pkg/csi"
+	"github.com/Cray-HPE/cray-site-init/pkg/sls"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 )
 
@@ -146,7 +146,7 @@ func stripIpInformationFromHardware(extraPropertiesRaw interface{}) interface{} 
 	switch ep := extraPropertiesRaw.(type) {
 	case sls_common.ComptypeCabinet:
 		ep.Networks = nil
-		if cabinetKind := csi.CabinetKind(ep.Model); cabinetKind.IsModel() {
+		if cabinetKind := sls.CabinetKind(ep.Model); cabinetKind.IsModel() {
 			ep.Model = ""
 		}
 		return ep

@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022-2023 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022-2023,2025 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -28,7 +28,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Cray-HPE/cray-site-init/pkg/csi"
+	"github.com/Cray-HPE/cray-site-init/pkg/sls"
 	"github.com/Cray-HPE/hardware-topology-assistant/pkg/configs"
 	"github.com/Cray-HPE/hms-xname/xnames"
 )
@@ -71,17 +71,17 @@ func DetermineCabinetLookup(paddle Paddle) (configs.CabinetLookup, error) {
 		chassisList := cabinetChassisList[cabinet]
 		sort.Ints(chassisList)
 
-		var kind csi.CabinetKind
+		var kind sls.CabinetKind
 		if reflect.DeepEqual(chassisList, []int{0, 1, 2, 3, 4, 5, 6, 7}) {
-			kind = csi.CabinetKindMountain
+			kind = sls.CabinetKindMountain
 		} else if reflect.DeepEqual(chassisList, []int{1, 3}) {
-			kind = csi.CabinetKindHill
+			kind = sls.CabinetKindHill
 		} else if reflect.DeepEqual(chassisList, []int{0}) {
-			kind = csi.CabinetKindEX2500
+			kind = sls.CabinetKindEX2500
 		} else if reflect.DeepEqual(chassisList, []int{0, 1}) {
-			kind = csi.CabinetKindEX2500
+			kind = sls.CabinetKindEX2500
 		} else if reflect.DeepEqual(chassisList, []int{0, 1, 3}) {
-			kind = csi.CabinetKindEX2500
+			kind = sls.CabinetKindEX2500
 		} else {
 			return configs.CabinetLookup{}, fmt.Errorf("unable to infer liquid-cooled cabinet kind with chassis list (%v)", chassisList)
 		}
@@ -118,7 +118,7 @@ func DetermineCabinetLookup(paddle Paddle) (configs.CabinetLookup, error) {
 	}
 
 	for cabinet := range riverCabinets {
-		cabinetLookup[csi.CabinetKindRiver] = append(cabinetLookup[csi.CabinetKindRiver], cabinet)
+		cabinetLookup[sls.CabinetKindRiver] = append(cabinetLookup[sls.CabinetKindRiver], cabinet)
 
 	}
 

@@ -1,6 +1,6 @@
 // MIT License
 //
-// (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+// (C) Copyright 2022,2025 Hewlett Packard Enterprise Development LP
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -25,14 +25,14 @@ package configs
 import (
 	"fmt"
 
-	"github.com/Cray-HPE/cray-site-init/pkg/csi"
+	"github.com/Cray-HPE/cray-site-init/pkg/sls"
 	sls_common "github.com/Cray-HPE/hms-sls/pkg/sls-common"
 	"github.com/Cray-HPE/hms-xname/xnames"
 )
 
-type CabinetLookup map[csi.CabinetKind][]string
+type CabinetLookup map[sls.CabinetKind][]string
 
-func (cl CabinetLookup) CabinetKind(wantedCabinet string) (csi.CabinetKind, error) {
+func (cl CabinetLookup) CabinetKind(wantedCabinet string) (sls.CabinetKind, error) {
 	for cabinetKind, cabinets := range cl {
 		for _, cabinet := range cabinets {
 			if cabinet == wantedCabinet {
