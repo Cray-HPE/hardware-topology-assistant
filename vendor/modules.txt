@@ -141,10 +141,10 @@ go.uber.org/zap/internal/exit
 go.uber.org/zap/internal/pool
 go.uber.org/zap/internal/stacktrace
 go.uber.org/zap/zapcore
-# go4.org/intern v0.0.0-20211027215823-ae77deb06f29
+# go4.org/intern v0.0.0-20220617035311-6925f38cc365
 ## explicit; go 1.13
 go4.org/intern
-# go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760
+# go4.org/unsafe/assume-no-moving-gc v0.0.0-20231121144256-b99613f794b6
 ## explicit; go 1.11
 go4.org/unsafe/assume-no-moving-gc
 # golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
