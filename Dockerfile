@@ -1,6 +1,6 @@
 # MIT License
 #
-# (C) Copyright 2022 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2022,2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -54,7 +54,7 @@ RUN set -ex \
 #
 # Final image
 #
-FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.16
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21
 LABEL maintainer="Hewlett Packard Enterprise"
 STOPSIGNAL SIGTERM
 
