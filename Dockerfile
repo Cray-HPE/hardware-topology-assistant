@@ -54,7 +54,7 @@ RUN set -ex \
 #
 # Final image
 #
-FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.22
 LABEL maintainer="Hewlett Packard Enterprise"
 STOPSIGNAL SIGTERM
 
